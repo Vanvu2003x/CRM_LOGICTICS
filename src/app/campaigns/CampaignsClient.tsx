@@ -22,7 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { createCampaign, saveProductLink, updateCampaignStatus, updateProductStep } from "./actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, CalendarClock, ExternalLink, ShieldAlert, CheckCircle } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertTitle } from "@/components/ui/alert";
 
 type ProductWithUserAndCampaign = CampaignProduct & { user: PublicUser; campaign: Campaign };
 
@@ -354,76 +354,52 @@ export default function CampaignsClient({ users, campaigns, products, nowIso }: 
 
         <TabsContent value="campaigns" className="space-y-4">
           {filteredCampaigns.length===0&&<p className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">Không có chiến dịch phù hợp bộ lọc.</p>}
+          <div className="grid gap-4 xl:grid-cols-2">
           {campaignPage.items.map(camp => {
             const campaignEnd = new Date(camp.endDate || camp.deadline);
             const campaignStart = new Date(camp.startDate || camp.createdAt);
             const timing = campaignPeriodStatus(campaignEnd, new Date(nowIso));
-            const normal=permittedProducts.filter(p=>p.campaignId===camp.id&&p.type!=="PENALTY");
+            const campaignProducts=permittedProducts.filter(p=>p.campaignId===camp.id);
+            const normal=campaignProducts.filter(p=>p.type!=="PENALTY");
+            const people=campaignPeople(campaignProducts);
+            const doneCount=normal.filter(p=>p.step==="DONE").length;
+            const pendingPenalties=people.reduce((total,person)=>total+person.pendingPenalties,0);
             const complete=normal.length>0&&normal.every(p=>p.step==="DONE");
             const isNearDeadline = !complete&&timing.state === "DUE_SOON";
             const isOverdue = !complete&&timing.state === "OVERDUE";
+            const cancelled=camp.status==="CANCELLED";
+            const statusLabel=cancelled?"Đã hủy":complete?"Hoàn thành":isOverdue?"Quá hạn":isNearDeadline?"Sắp đến hạn":"Đang thực hiện";
+            const statusClass=cancelled?"border-slate-200 bg-slate-100 text-slate-600":complete?"border-emerald-200 bg-emerald-50 text-emerald-700":isOverdue?"border-rose-200 bg-rose-50 text-rose-700":isNearDeadline?"border-amber-200 bg-amber-50 text-amber-700":"border-blue-200 bg-blue-50 text-blue-700";
 
             return (
-              <Card key={camp.id}>
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-xl flex items-center gap-2">
-                        {camp.name}
-                        {camp.status==="CANCELLED"&&<Badge variant="destructive">ĐÃ HỦY</Badge>}
-                        {isOverdue && <Badge variant="destructive">QUÁ HẠN</Badge>}{complete&&<Badge variant="outline">HOÀN THÀNH</Badge>}
-                      </CardTitle>
-                      <CardDescription className="mt-1">{camp.description}</CardDescription>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold">{format(campaignStart, "dd/MM/yyyy")} – {format(campaignEnd, "dd/MM/yyyy")}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {complete?"Nhiệm vụ chính đã hoàn thành":timing.label}
-                      </div>
-                    </div>
+              <Card key={camp.id} className={`overflow-hidden border-t-4 ${isOverdue?"border-t-rose-500":isNearDeadline?"border-t-amber-500":complete?"border-t-emerald-500":cancelled?"border-t-slate-400":"border-t-blue-500"}`}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0"><CardTitle className="truncate text-lg">{camp.name}</CardTitle><CardDescription className="mt-1 line-clamp-2">{camp.description||"Chưa có mô tả chiến dịch."}</CardDescription></div>
+                    <Badge className={`shrink-0 border ${statusClass}`}>{statusLabel}</Badge>
                   </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-2 text-xs text-slate-500"><span>{format(campaignStart,"dd/MM/yyyy")} – {format(campaignEnd,"dd/MM/yyyy")}</span><span>{people.length} nhân sự</span><span>{doneCount}/{normal.length||0} nhiệm vụ xong</span></div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
                   {isNearDeadline && (
-                    <Alert className="mb-4 border-amber-500 bg-amber-50 text-amber-900">
+                    <Alert className="border-amber-500 bg-amber-50 py-2 text-amber-900">
                       <AlertCircle className="h-4 w-4 text-amber-600" />
-                      <AlertTitle>Sắp đến hạn!</AlertTitle>
-                      <AlertDescription>
-                        {isAdmin ? `Chiến dịch ${timing.label.toLocaleLowerCase("vi-VN")}. Hãy nhắc nhân viên hoàn thành kịch bản và sản phẩm.` : `Nhiệm vụ của bạn ${timing.label.toLocaleLowerCase("vi-VN")}. Hãy hoàn thành kịch bản và sản phẩm đúng hạn.`}
-                      </AlertDescription>
+                      <AlertTitle className="text-xs">Sắp đến hạn · {timing.label}</AlertTitle>
                     </Alert>
                   )}
                   {isOverdue && (
-                    <Alert variant="destructive" className="mb-4">
+                    <Alert variant="destructive" className="py-2">
                       <ShieldAlert className="h-4 w-4" />
-                      <AlertTitle>Đã quá hạn!</AlertTitle>
-                      <AlertDescription>
-                        {isAdmin ? `Chiến dịch ${timing.label.toLocaleLowerCase("vi-VN")}. Hệ thống tự thêm 1 bài phạt mỗi ngày trễ cho từng nhiệm vụ chưa hoàn thành, không cần cộng thủ công.` : `Nhiệm vụ của bạn ${timing.label.toLocaleLowerCase("vi-VN")}. Hãy nộp sản phẩm và bài phạt phát sinh.`}
-                      </AlertDescription>
+                      <AlertTitle className="text-xs">Quá hạn · {pendingPenalties} bài phạt chưa xong</AlertTitle>
                     </Alert>
                   )}
-
-                  <div className="text-sm">
-                    <strong>Yêu cầu:</strong> {camp.requirements}
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap gap-2"><Button disabled={camp.status==="CANCELLED"} onClick={()=>{setSelectedCampaignId(camp.id);setTab("plan");}} className="bg-blue-600 hover:bg-blue-700">{isAdmin ? "Mở kế hoạch & phân công →" : "Mở nhiệm vụ của tôi →"}</Button>{isAdmin&&camp.status!=="CANCELLED"&&<Button variant="outline" onClick={()=>void handleCampaignStatus(camp.id,"CANCELLED")}>Hủy chiến dịch</Button>}{isAdmin&&camp.status==="CANCELLED"&&<Button variant="outline" onClick={()=>void handleCampaignStatus(camp.id,"IN_PROGRESS")}>Mở lại</Button>}</div>
-
-                  <div className="mt-4 pt-4 border-t">
-                    <h4 className="font-semibold mb-3">Nhân sự tham gia</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {campaignPeople(permittedProducts.filter(p=>p.campaignId===camp.id)).map(person=>(
-                        <div key={person.user.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-slate-50 p-3 text-sm">
-                          <span className="font-medium">{person.user.name}</span>
-                          <div className="flex flex-wrap gap-2"><Badge variant="outline">{person.tasks} nhiệm vụ</Badge><Badge variant="outline">{person.done} hoàn thành</Badge>{person.penalties>0&&<Badge variant="destructive">{person.penalties} bài phạt · {person.pendingPenalties} chưa xong</Badge>}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <div className="rounded-xl bg-slate-50 p-3 text-sm"><p className="font-semibold text-slate-700">Yêu cầu chính</p><p className="mt-1 line-clamp-2 text-slate-600">{camp.requirements||"Chưa có yêu cầu."}</p></div>
+                  <div className="flex flex-wrap gap-2"><Button disabled={cancelled} onClick={()=>{setSelectedCampaignId(camp.id);setTab("plan");}} className="bg-blue-600 hover:bg-blue-700">{isAdmin?"Mở kế hoạch & phân công →":"Mở nhiệm vụ của tôi →"}</Button>{isAdmin&&cancelled&&<Button variant="outline" onClick={()=>void handleCampaignStatus(camp.id,"IN_PROGRESS")}>Mở lại</Button>}{isAdmin&&!cancelled&&<Button variant="outline" onClick={()=>void handleCampaignStatus(camp.id,"CANCELLED")}>Hủy chiến dịch</Button>}</div>
                 </CardContent>
               </Card>
             );
           })}
+          </div>
         </TabsContent>
         {tab!=="plan"&&<CampaignPagination page={paging.page} pages={paging.pages} total={paging.total} size={size} onPage={setPage} onSize={n=>{setSize(n);setPage(1);}}/>}
       </Tabs>

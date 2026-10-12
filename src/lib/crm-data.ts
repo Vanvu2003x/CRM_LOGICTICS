@@ -29,7 +29,7 @@ export async function scopedData(user: PublicUser) {
       history: readJson<unknown[]>(lead.contactHistory, []), originRef: lead.originRef, callOutcome: lead.callOutcome,
     })),
     orders: orders.map((order) => ({
-      id: order.code, dbId: order.id, customer: order.customerName || order.lead?.company || order.lead?.name || order.code,
+      id: order.code, publicCode: order.publicCode, dbId: order.id, customer: order.customerName || order.lead?.company || order.lead?.name || order.code,
       step: order.currentStep, type: order.type === "IMPORT" ? "IMPORT" as const : "EXPORT" as const,
       date: order.createdAt.toISOString().slice(0, 10), sales: order.sales.name, salesId: order.salesId,
       exportPort: order.exportPort, importPort: order.importPort, expectedDate: order.expectedDate?.toISOString() || null, quantity: order.quantity, incoterms: order.incoterms,

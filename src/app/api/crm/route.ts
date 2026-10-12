@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { officialOrderCode } from "@/lib/order-codes";
 import { assertOwner, manager, requireUser } from "@/lib/auth";
 import { activity, ownedLead, ownedOrder, scopedData } from "@/lib/crm-data";
 import { nextStage, readJson, type SavedSteps, type StepFields } from "@/lib/business-rules";
@@ -97,6 +98,7 @@ export async function POST(request: Request) {
       const history = readJson<unknown[]>(order.workflowHistory, []);
       let target = order.currentStep;
       let status = order.status;
+      let publicCode = order.publicCode;
       if (action === "order.save" || action === "order.complete") {
         if(step>order.currentStep)throw new Error("Chưa đến bước này. Hoàn tất các bước trước để lưu.");
         saved[step] = { ...saved[step], ...data };
@@ -130,6 +132,13 @@ export async function POST(request: Request) {
         else if (decision === "FAIL" && data.reason) status = "FAILED";
         else throw new Error("Chọn quyết định và ghi lý do nếu fail.");
       }
+      if (action === "order.complete" && step === 6 && !publicCode) {
+        const bookedAt = new Date();
+        const prefix = order.type === "IMPORT" ? "LP-NK" : "LP-XK";
+        const period = `${String(bookedAt.getFullYear()).slice(-2)}${String(bookedAt.getMonth() + 1).padStart(2, "0")}`;
+        const sequence = await db.order.count({ where: { publicCode: { startsWith: `${prefix}-${period}-` } } });
+        publicCode = officialOrderCode(order.type, bookedAt, sequence + 1);
+      }
       if (action !== "order.save") history.unshift({ at: new Date().toISOString(), by: user.name, action, from: order.currentStep, to: target, reason: data.reason || "" });
       const info = saved[2] || {};
       const payment = saved[13] || {};
@@ -137,6 +146,7 @@ export async function POST(request: Request) {
       if (payment.amount !== undefined && (!Number.isFinite(amount) || amount < 0)) throw new Error("Số tiền không hợp lệ.");
       await db.order.update({ where: { id: order.id }, data: {
         currentStep: target, status, stepsData: JSON.stringify(saved), completedSteps: JSON.stringify(completed), workflowHistory: JSON.stringify(history.slice(0, 100)),
+        publicCode,
         type: info.type === "IMPORT" ? "IMPORT" : info.type === "EXPORT" ? "EXPORT" : order.type,
         exportPort: typeof info.exportPort==="string"?info.exportPort:order.exportPort,
         importPort: typeof info.importPort==="string"?info.importPort:order.importPort,

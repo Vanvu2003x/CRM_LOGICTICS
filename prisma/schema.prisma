@@ -129,6 +129,7 @@ model LeadDataRequest {
 model Order {
   id      String  @id @default(cuid())
   code    String  @unique
+  publicCode String? @unique
   leadId  String? @unique
   lead    Lead?   @relation(fields: [leadId], references: [id])
   salesId String

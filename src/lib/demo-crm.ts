@@ -27,6 +27,7 @@ export type DemoLead = {
 
 export type DemoOrder = {
   id: string;
+  publicCode?: string | null;
   customer: string;
   step: number;
   type: "EXPORT" | "IMPORT";

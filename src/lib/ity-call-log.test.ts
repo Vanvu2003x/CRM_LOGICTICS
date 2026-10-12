@@ -18,6 +18,9 @@ describe("ITY call log payload", () => {
     expect(parseItyCallLog({ ...sample, status: "BUSY", billsec: 0, answer_stamp: "" }).callOutcome).toBe("NO_ANSWER");
     expect(parseItyCallLog(sample).callOutcome).toBe("ANSWERED");
   });
+  it("keeps an answered call as answered when ITY sends a stale no-answer classification", () => {
+    expect(parseItyCallLog({ ...sample, disposition: "KHONG_NGHE_MAY", billsec: 5 }).callOutcome).toBe("ANSWERED");
+  });
   it("stores Vietnamese numbers returned by ITY in the familiar 0-prefix format", () => {
     expect(parseItyCallLog({ ...sample, phone: "84847855333" }).phone).toBe("0847855333");
     expect(parseItyCallLog({ ...sample, phone: "+84912345678" }).phone).toBe("0912345678");

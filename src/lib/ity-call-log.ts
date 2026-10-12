@@ -13,12 +13,14 @@ export function ityDialPhone(value: string) {
   return familiarPhone(compact).replace(/^\+/, "");
 }
 
-function callOutcomeFrom(disposition: string, status: string) {
+function callOutcomeFrom(disposition: string, status: string, answeredAt: Date | null, billsec: number) {
   if (["CO_NHU_CAU", "INTERESTED", "HAS_DEMAND", "POTENTIAL"].includes(disposition)) return "INTERESTED";
   if (["KHONG_CO_NHU_CAU", "KHONG_NHU_CAU", "NO_NEED", "NOT_INTERESTED"].includes(disposition)) return "NO_NEED";
   if (["DA_CO_DON_VI_KHAC", "CO_DON_VI_KHAC", "USING_OTHER", "OTHER_PROVIDER"].includes(disposition)) return "USING_OTHER";
+  // ITY can send a stale no-answer classification with the final call event.
+  // An answer timestamp or billable seconds is stronger evidence that the call was answered.
+  if (answeredAt || billsec > 0 || status.includes("ANSWERED") || status.includes("ANSWER")) return "ANSWERED";
   if (["KHONG_NGHE_MAY", "NO_ANSWER", "NOANSWER", "BUSY", "USER_BUSY"].includes(disposition)) return "NO_ANSWER";
-  if (status.includes("ANSWERED") || status.includes("ANSWER")) return "ANSWERED";
   return ["NO ANSWER", "BUSY", "USER BUSY", "480", "404"].some((value) => status.includes(value)) ? "NO_ANSWER" : "UNKNOWN";
 }
 export function parseItyCallLog(value: unknown) {
@@ -56,7 +58,7 @@ export function parseItyCallLog(value: unknown) {
   const mos = data.mos === undefined || data.mos === "" || data.mos === null ? null : Number(data.mos);
   if (mos !== null && (!Number.isFinite(mos) || mos < 0 || mos > 5)) throw new Error("MOS không hợp lệ.");
   const disposition = normalizedDisposition(text("call_outcome", 80) || text("disposition", 80) || text("classification", 80) || text("result", 80));
-  const inferredOutcome = callOutcomeFrom(disposition, status);
+  const inferredOutcome = callOutcomeFrom(disposition, status, answeredAt, billsec);
   const demand = data.isInterested === true || data.demand === "YES" || inferredOutcome === "INTERESTED" ? "YES" : data.isInterested === false || data.demand === "NO" || ["NO_NEED", "USING_OTHER"].includes(inferredOutcome) ? "NO" : "UNKNOWN";
   const callOutcome = demand === "YES" ? "INTERESTED" : demand === "NO" && inferredOutcome === "UNKNOWN" ? "NO_NEED" : inferredOutcome;
   return { callid, phone, startedAt, answeredAt, endedAt, duration, billsec, status, direction: direction!, recordingUrl, demand, callOutcome,

@@ -73,6 +73,12 @@ export default function CampaignsClient({ users, campaigns, products, nowIso }: 
   });
   const campaignPage=paginate(filteredCampaigns,page,size),taskPage=paginate(filteredTasks,page,size);
   const paging=tab==="campaigns"?campaignPage:taskPage;
+  const campaignOverview={
+    active: filteredCampaigns.filter(c=>c.status!=="CANCELLED").length,
+    submit: permittedProducts.filter(p=>p.step==="SCRIPT_DRAFT"||p.step==="PRODUCT_DRAFT").length,
+    review: permittedProducts.filter(p=>p.step==="SCRIPT_APPROVED"||p.step==="PRODUCT_APPROVED").length,
+    overdue: permittedProducts.filter(p=>campaignPeriodStatus(p.deadline||p.campaign.deadline,new Date(nowIso)).state==="OVERDUE"&&p.step!=="DONE").length,
+  };
 
   // Form states
   const [name, setName] = useState("");
@@ -213,11 +219,15 @@ export default function CampaignsClient({ users, campaigns, products, nowIso }: 
         )}
       </div>
 
+      <section aria-label="Tổng quan công việc truyền thông" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[{label:"Chiến dịch đang theo dõi",value:campaignOverview.active,tab:"campaigns",tone:"border-blue-200 bg-blue-50 text-blue-800"},{label:"Nội dung cần nộp",value:campaignOverview.submit,tab:"tasks",tone:"border-amber-200 bg-amber-50 text-amber-800"},{label:"Đang chờ duyệt",value:campaignOverview.review,tab:"tasks",tone:"border-violet-200 bg-violet-50 text-violet-800"},{label:"Đã quá hạn",value:campaignOverview.overdue,tab:"tasks",tone:"border-rose-200 bg-rose-50 text-rose-800"}].map(card=><button key={card.label} type="button" onClick={()=>{setTab(card.tab);setPage(1);}} className={`rounded-xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${card.tone}`}><p className="text-xs font-medium opacity-80">{card.label}</p><p className="mt-1 text-2xl font-bold">{card.value}</p><p className="mt-1 text-[11px] opacity-70">Bấm để xem chi tiết →</p></button>)}
+      </section>
+
       <Tabs value={tab} onValueChange={value=>{setTab(value);setPage(1);}} className="w-full">
         <TabsList className="mb-4 max-w-full justify-start overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <TabsTrigger value="campaigns">Danh sách chiến dịch</TabsTrigger>
-          <TabsTrigger value="plan">Kế hoạch nội dung</TabsTrigger>
-          <TabsTrigger value="tasks">Quy trình duyệt</TabsTrigger>
+          <TabsTrigger value="campaigns">Chiến dịch <span className="ml-1 rounded-full bg-slate-100 px-1.5 text-[10px]">{filteredCampaigns.length}</span></TabsTrigger>
+          <TabsTrigger value="plan">Kế hoạch nội dung <span className="ml-1 rounded-full bg-slate-100 px-1.5 text-[10px]">{permittedProducts.length}</span></TabsTrigger>
+          <TabsTrigger value="tasks">Việc cần duyệt <span className="ml-1 rounded-full bg-slate-100 px-1.5 text-[10px]">{campaignOverview.submit+campaignOverview.review}</span></TabsTrigger>
         </TabsList>
 
         {tab!=="plan"&&<div className="mb-4 flex flex-col gap-2 rounded-xl border bg-white p-3 sm:flex-row sm:flex-wrap">

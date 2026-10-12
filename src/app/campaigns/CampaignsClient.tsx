@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { createCampaign, saveProductLink, updateProductStep } from "./actions";
+import { createCampaign, saveProductLink, updateCampaignStatus, updateProductStep } from "./actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, CalendarClock, ExternalLink, ShieldAlert, CheckCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -68,7 +68,7 @@ export default function CampaignsClient({ users, campaigns, products, nowIso }: 
     const items=permittedProducts.filter(p=>p.campaignId===c.id);
     const normal=items.filter(p=>p.type!=="PENALTY");
     const done=normal.length>0&&normal.every(p=>p.step==="DONE");
-    const state=done?"DONE":campaignPeriodStatus(c.endDate||c.deadline,new Date(nowIso)).state;
+    const state=c.status==="CANCELLED"?"CANCELLED":done?"DONE":campaignPeriodStatus(c.endDate||c.deadline,new Date(nowIso)).state;
     return (!query||`${c.name} ${c.description||""}`.toLocaleLowerCase("vi-VN").includes(query.toLocaleLowerCase("vi-VN")))&&(owner==="ALL"||items.some(p=>p.userId===owner))&&(period==="ALL"||state===period);
   });
   const campaignPage=paginate(filteredCampaigns,page,size),taskPage=paginate(filteredTasks,page,size);
@@ -140,6 +140,11 @@ export default function CampaignsClient({ users, campaigns, products, nowIso }: 
     setLoading(false);
     toast({ title: result.success ? "Đã lưu link" : "Không thể lưu link", description: result.success ? "Link kế hoạch đã được lưu và giữ sau khi tải lại trang." : result.error, variant: result.success ? "default" : "destructive" });
     if (result.success) router.refresh();
+  };
+  const handleCampaignStatus = async (id:string,status:"IN_PROGRESS"|"COMPLETED"|"CANCELLED") => {
+    setLoading(true); const result=await updateCampaignStatus(id,status); setLoading(false);
+    toast({title:result.success?"Đã cập nhật chiến dịch":"Không thể cập nhật",description:result.success?"Trạng thái đã được lưu.":result.error,variant:result.success?"default":"destructive"});
+    if(result.success)router.refresh();
   };
 
   return (
@@ -218,7 +223,7 @@ export default function CampaignsClient({ users, campaigns, products, nowIso }: 
         {tab!=="plan"&&<div className="mb-4 flex flex-col gap-2 rounded-xl border bg-white p-3 sm:flex-row sm:flex-wrap">
           <Input aria-label="Tìm chiến dịch hoặc nhiệm vụ" placeholder="Tìm chiến dịch, nội dung..." value={query} onChange={e=>{setQuery(e.target.value);setPage(1);}} className="min-w-0 sm:max-w-xs"/>
           {isAdmin&&<select aria-label="Lọc nhân viên" className="h-10 rounded-lg border px-3 text-sm" value={owner} onChange={e=>{setOwner(e.target.value);setPage(1);}}><option value="ALL">Tất cả nhân viên</option>{users.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select>}
-          {tab==="campaigns"?<select aria-label="Lọc trạng thái chiến dịch" className="h-10 rounded-lg border px-3 text-sm" value={period} onChange={e=>{setPeriod(e.target.value);setPage(1);}}><option value="ALL">Tất cả trạng thái</option><option value="ACTIVE">Đang thực hiện</option><option value="DUE_SOON">Sắp đến hạn</option><option value="OVERDUE">Quá hạn</option><option value="DONE">Hoàn thành</option></select>:<>
+          {tab==="campaigns"?<select aria-label="Lọc trạng thái chiến dịch" className="h-10 rounded-lg border px-3 text-sm" value={period} onChange={e=>{setPeriod(e.target.value);setPage(1);}}><option value="ALL">Tất cả trạng thái</option><option value="ACTIVE">Đang thực hiện</option><option value="DUE_SOON">Sắp đến hạn</option><option value="OVERDUE">Quá hạn</option><option value="DONE">Hoàn thành</option><option value="CANCELLED">Đã hủy</option></select>:<>
           <select aria-label="Lọc loại nhiệm vụ" className="h-10 rounded-lg border px-3 text-sm" value={kind} onChange={e=>{setKind(e.target.value);setPage(1);}}><option value="ALL">Nhiệm vụ & bài phạt</option><option value="NORMAL">Nhiệm vụ chính</option><option value="PENALTY">Bài phạt</option></select>
           <select aria-label="Lọc bước duyệt" className="h-10 rounded-lg border px-3 text-sm" value={step} onChange={e=>{setStep(e.target.value);setPage(1);}}><option value="ALL">Tất cả bước</option>{STEPS.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select></>}
         </div>}
@@ -355,6 +360,7 @@ export default function CampaignsClient({ users, campaigns, products, nowIso }: 
                     <div>
                       <CardTitle className="text-xl flex items-center gap-2">
                         {camp.name}
+                        {camp.status==="CANCELLED"&&<Badge variant="destructive">ĐÃ HỦY</Badge>}
                         {isOverdue && <Badge variant="destructive">QUÁ HẠN</Badge>}{complete&&<Badge variant="outline">HOÀN THÀNH</Badge>}
                       </CardTitle>
                       <CardDescription className="mt-1">{camp.description}</CardDescription>
@@ -391,7 +397,7 @@ export default function CampaignsClient({ users, campaigns, products, nowIso }: 
                     <strong>Yêu cầu:</strong> {camp.requirements}
                   </div>
 
-                  <div className="mt-4"><Button onClick={()=>{setSelectedCampaignId(camp.id);setTab("plan");}} className="bg-blue-600 hover:bg-blue-700">{isAdmin ? "Mở kế hoạch & phân công →" : "Mở nhiệm vụ của tôi →"}</Button></div>
+                  <div className="mt-4 flex flex-wrap gap-2"><Button disabled={camp.status==="CANCELLED"} onClick={()=>{setSelectedCampaignId(camp.id);setTab("plan");}} className="bg-blue-600 hover:bg-blue-700">{isAdmin ? "Mở kế hoạch & phân công →" : "Mở nhiệm vụ của tôi →"}</Button>{isAdmin&&camp.status!=="CANCELLED"&&<Button variant="outline" onClick={()=>void handleCampaignStatus(camp.id,"CANCELLED")}>Hủy chiến dịch</Button>}{isAdmin&&camp.status==="CANCELLED"&&<Button variant="outline" onClick={()=>void handleCampaignStatus(camp.id,"IN_PROGRESS")}>Mở lại</Button>}</div>
 
                   <div className="mt-4 pt-4 border-t">
                     <h4 className="font-semibold mb-3">Nhân sự tham gia</h4>

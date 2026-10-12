@@ -16,7 +16,7 @@ async function updateReminders(now:Date) {
  const [leads,orders,products,fairs,workSessions]=await Promise.all([
   db.lead.findMany({where:{status:{in:["NEW","IN_PROGRESS"]},interestState:"YES"}}),
   db.order.findMany({where:{status:"IN_PROGRESS"}}),
-  db.campaignProduct.findMany({where:{step:{not:"DONE"}},include:{campaign:true}}),
+  db.campaignProduct.findMany({where:{step:{not:"DONE"},campaign:{status:{not:"CANCELLED"}}},include:{campaign:true}}),
   db.tradeFairParticipation.findMany({where:{session:{not:"NONE"}},include:{fair:true}}),
   db.attendance.findMany({where:{checkOut:null},include:{posts:true}})
  ]);

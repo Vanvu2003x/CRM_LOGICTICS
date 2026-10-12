@@ -14,6 +14,12 @@ export async function createCampaign(data:{name:string;description:string;requir
  revalidatePath("/campaigns");return {success:true};
  }catch(error){return {success:false,error:error instanceof Error?error.message:"Không tạo được chiến dịch."};}
 }
+export async function updateCampaignStatus(id:string,status:"IN_PROGRESS"|"COMPLETED"|"CANCELLED") {
+ try { const user=await requireUser(); if(!manager(user))throw new Error("Chỉ quản lý được đổi trạng thái chiến dịch.");
+  const campaign=await db.campaign.findUnique({where:{id}}); if(!campaign)throw new Error("Không tìm thấy chiến dịch.");
+  await db.campaign.update({where:{id},data:{status}}); revalidatePath("/campaigns"); return {success:true};
+ } catch(error){return {success:false,error:error instanceof Error?error.message:"Không cập nhật được chiến dịch."};}
+}
 export async function updateProductStep(id:string,newStep:string,link?:string,notes?:string) {
  try {const user=await requireUser();const product=await db.campaignProduct.findUnique({where:{id}});
  if(!product)throw new Error("Không tìm thấy công việc.");await assertOwner(user,product.userId);

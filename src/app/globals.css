@@ -302,3 +302,38 @@
 
 .dashboard-quick { display: flex; align-items: center; gap: 0.5rem; min-height: 3rem; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 0.75rem; color: #475569; font-size: 0.6875rem; font-weight: 500; transition: background-color 150ms, border-color 150ms; }
 .dashboard-quick:hover { background: #eff6ff; border-color: #bfdbfe; }
+
+/* Default CRM identity: navy workspace, electric-blue action, quiet neutral canvas. */
+.crm-shell[data-theme="navy"] { background-color: #f8fafc; color: #0f172a; }
+.crm-shell[data-theme="navy"] main { background-color: #f8fafc; }
+.crm-header[data-theme="navy"] {
+  --header-overlay: rgba(15, 23, 42, 0.96);
+  --header-center: rgba(15, 23, 42, 0.82);
+  background-color: #0f172a;
+  border-color: #1e293b;
+}
+.crm-sidebar[data-theme="navy"] {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+.crm-sidebar[data-theme="navy"] > div:first-child {
+  background-color: #0f172a;
+  border-color: #334155;
+}
+.crm-sidebar[data-theme="navy"] nav > div,
+.crm-sidebar[data-theme="navy"] .border-slate-700,
+.crm-sidebar[data-theme="navy"] .border-slate-800 { border-color: #263449; }
+.crm-sidebar[data-theme="navy"] .text-blue-50,
+.crm-sidebar[data-theme="navy"] .text-blue-100 { color: #f8fafc; }
+.crm-sidebar[data-theme="navy"] .text-slate-400,
+.crm-sidebar[data-theme="navy"] .text-slate-500 { color: #94a3b8; }
+.crm-sidebar[data-theme="navy"] .bg-slate-900,
+.crm-sidebar[data-theme="navy"] .bg-slate-800 { background-color: #111c2e; }
+.crm-sidebar[data-theme="navy"] a[aria-current="page"],
+.crm-sidebar[data-theme="navy"] button.bg-blue-600 { background-color: #2563eb; }
+.crm-sidebar[data-theme="navy"] a:not([aria-current="page"]):hover,
+.crm-sidebar[data-theme="navy"] button:hover { background-color: #1e293b; }
+.crm-shell[data-theme="navy"] main .bg-blue-600,
+.crm-shell[data-theme="navy"] main button.bg-blue-600 { background-color: #2563eb; }
+.crm-shell[data-theme="navy"] main .bg-blue-600:hover,
+.crm-shell[data-theme="navy"] main button.bg-blue-600:hover { background-color: #1d4ed8; }

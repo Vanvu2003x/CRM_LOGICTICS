@@ -13,7 +13,7 @@ type Field = [string,string,string?];
 const formFields: Record<number,Field[]> = {
  1:[["contactDate","Ngày liên hệ","date"],["needs","Nhu cầu khách"],["followUpAt","Ngày chăm sóc tiếp theo","date"],["notes","Nội dung trao đổi"]],
  2:[["type","Loại đơn","EXPORT|IMPORT"],["exportPort","Cảng xuất"],["importPort","Cảng nhập"],["transportMethod","Phương thức","FCL|LCL|AIR|CPN|BỘ TN|BỘ CN"],["expectedDate","Ngày dự kiến","date"],["itemName","Tên hàng"],["quantity","Số lượng"],["pickupLocation","Nơi lấy hàng"],["deliveryLocation","Nơi giao hàng"],["incoterms","Điều kiện","EXW|FCA|FOB|CIF|CIP|CFR|DDU|DDP|DAP|Bộ CN|Bộ TN|CPN"],["notes","Ghi chú"]],
- 5:[["decision","Phản hồi","ACCEPT|RETURN|FAIL"],["reason","Lý do / ghi chú phản hồi"]],
+ 5:[["decision","Phản hồi","GREEN|YELLOW|RED"],["reason","Lý do / ghi chú phản hồi"]],
  6:[["etd","ETD","date"],["eta","ETA","date"],["line","Hãng vận chuyển"],["price","Giá booking","number"],["currency","Tiền tệ","USD|VND"]],
  8:[["carrier","Đơn vị xe"],["price","Giá xe","number"],["pickupAt","Thời gian lấy hàng","datetime-local"],["vehicle","Biển số xe"],["delivered","Đã giao hàng","checkbox"],["notes","Ghi chú"]],
  9:[["shipper","Shipper (XK)"],["consignee","Consignee (XK)"],["notify","Notify party (XK)"],["vessel","Vessel / Voyage (XK)"],["goods","Mô tả hàng (XK)"],["mnfAt","Hạn nộp MNF","datetime-local"],["documentsDone","Đã kiểm tra đủ chứng từ","checkbox"]],
@@ -28,7 +28,7 @@ const normalizeLine = (line:Partial<Line>):Line => ({
  category:line.category||"FREIGHT",vatRate:Number(line.vatRate||0),fixedVnd:Number(line.fixedVnd||0),note:String(line.note||""),
 });
 const control = "w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
-const labels: Record<string,string> = {EXPORT:"Xuất khẩu",IMPORT:"Nhập khẩu",ACCEPT:"Khách đồng ý",RETURN:"Quay lại sửa thông tin",FAIL:"Đóng đơn thất bại",GREEN:"Luồng xanh",YELLOW:"Luồng vàng",RED:"Luồng đỏ",PROCESSING:"Đang xử lý",WAITING:"Chờ xử lý",CLEARED:"Đã thông quan"};
+const labels: Record<string,string> = {EXPORT:"Xuất khẩu",IMPORT:"Nhập khẩu",ACCEPT:"Khách đồng ý",RETURN:"Quay lại sửa thông tin",FAIL:"Đóng đơn thất bại",GREEN:"Xanh · Khách đồng ý",YELLOW:"Vàng · Cần sửa báo giá",RED:"Đỏ · Không tiếp tục",PROCESSING:"Đang xử lý",WAITING:"Chờ xử lý",CLEARED:"Đã thông quan"};
 const quoteCategoryLabels:Record<ImportQuoteCategory,string>={FREIGHT:"Cước quốc tế",ORIGIN:"Phí đầu nước ngoài",VIETNAM:"Phí tại Việt Nam"};
 const quoteCategoryStyles:Record<ImportQuoteCategory,string>={FREIGHT:"bg-blue-50 text-blue-700",ORIGIN:"bg-amber-50 text-amber-700",VIETNAM:"bg-emerald-50 text-emerald-700"};
 export default function OrderStepEditor({order,step,onAdvance}:{order:DemoOrder;step:number;onAdvance:(step:number)=>void}) {

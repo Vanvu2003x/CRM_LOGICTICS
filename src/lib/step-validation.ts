@@ -9,7 +9,8 @@ export function validateStep(step: number, data: StepFields) {
   };
   const missing = (required[step] || []).filter(key => data[key] === undefined || data[key] === "" || data[key] === false || data[key] === null);
   if (missing.length) throw new Error(`Chưa đủ thông tin để hoàn thành bước ${step}: ${missing.join(", ")}.`);
-  if (step === 5 && data.decision !== "ACCEPT") throw new Error("Chọn đồng ý, quay lại hoặc fail ở phần phản hồi.");
+  if (step === 5 && !["GREEN", "YELLOW", "RED", "ACCEPT", "RETURN", "FAIL"].includes(String(data.decision))) throw new Error("Chọn phản hồi xanh, vàng hoặc đỏ.");
+  if (step === 5 && ["YELLOW", "RED", "RETURN", "FAIL"].includes(String(data.decision)) && !String(data.reason || "").trim()) throw new Error("Phản hồi vàng/đỏ cần ghi rõ lý do.");
   if (step === 10 && data.customsStatus !== "CLEARED") throw new Error("Tờ khai chưa được thông quan.");
   if (step === 3) {
     const quotes = readJson<{vendor:string;price:number}[]>(String(data.quotes), []);

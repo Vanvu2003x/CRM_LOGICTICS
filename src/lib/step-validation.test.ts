@@ -17,6 +17,12 @@ describe("Workflow business checks",()=>{
  it("nêu đúng trường còn thiếu khi không thể hoàn tất",()=>{
   expect(()=>validateStep(2,{exportPort:"Hải Phòng"})).toThrow("importPort, transportMethod, expectedDate");
  });
+ it("phân loại phản hồi theo xanh vàng đỏ và bắt buộc lý do cho vàng đỏ",()=>{
+  expect(()=>validateStep(5,{decision:"GREEN"})).not.toThrow();
+  expect(()=>validateStep(5,{decision:"YELLOW"})).toThrow("cần ghi rõ lý do");
+  expect(()=>validateStep(5,{decision:"RED"})).toThrow("cần ghi rõ lý do");
+  expect(()=>validateStep(5,{decision:"YELLOW",reason:"Cần sửa báo giá"})).not.toThrow();
+ });
  it("tính đúng tháng ngắn và mốc giờ Việt Nam",()=>{
   expect(periodBounds("2026-02-12","month").end.toISOString()).toBe("2026-02-28T17:00:00.000Z");
   expect(periodBounds("2026-10-07","month").end.toISOString()).toBe("2026-10-31T17:00:00.000Z");

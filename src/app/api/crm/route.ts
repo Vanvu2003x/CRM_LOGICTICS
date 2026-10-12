@@ -122,7 +122,7 @@ export async function POST(request: Request) {
         if(step<order.currentStep)for(let i=completed.length-1;i>=0;i--)if(completed[i]>=step)completed.splice(i,1);
       }
       if (action === "order.feedback") {
-        const decision = data.decision;
+        const decision = data.decision === "GREEN" ? "ACCEPT" : data.decision === "YELLOW" ? "RETURN" : data.decision === "RED" ? "FAIL" : data.decision;
         if (order.currentStep !== 5) throw new Error("Đơn chưa ở bước phản hồi.");
         saved[5] = data;
         if (decision === "ACCEPT") { target = 6; if (!completed.includes(5)) completed.push(5); }

@@ -3,6 +3,7 @@ import { runReminders } from "@/lib/reminders";
 import { db } from "@/lib/db";
 import { requireUser,assertOwner,manager } from "@/lib/auth";
 import { safeUrl,readJson } from "@/lib/business-rules";
+import { validateCampaignLink } from "@/lib/campaign-link";
 import { revalidatePath } from "next/cache";
 export async function createCampaign(data:{name:string;description:string;requirements:string;startDate:Date;endDate:Date;userIds:string[]}) {
  try {const user=await requireUser();if(!manager(user))throw new Error("Chỉ quản lý được giao chiến dịch.");
@@ -29,6 +30,21 @@ export async function updateProductStep(id:string,newStep:string,link?:string,no
  await db.campaignProduct.update({where:{id},data:{step:newStep,link:nextLink,notes:activeNotes,history:JSON.stringify(history),submittedAt:nextLink?(product.submittedAt||new Date()):product.submittedAt,completedAt:newStep==="DONE"?new Date():product.completedAt}});
  revalidatePath("/campaigns");return {success:true};
  }catch(error){return {success:false,error:error instanceof Error?error.message:"Không cập nhật được."};}
+}
+
+export async function saveProductLink(id: string, link: string) {
+ try {
+  const user = await requireUser();
+  const product = await db.campaignProduct.findUnique({where:{id}});
+  if (!product) throw new Error("Không tìm thấy công việc.");
+  await assertOwner(user, product.userId);
+  const nextLink = validateCampaignLink(link);
+  await db.campaignProduct.update({where:{id}, data:{link: nextLink, submittedAt: product.submittedAt || new Date()}});
+  revalidatePath("/campaigns");
+  return {success:true};
+ } catch (error) {
+  return {success:false,error:error instanceof Error ? error.message : "Không lưu được link kế hoạch."};
+ }
 }
 export async function addAssignment(data:{campaignId:string;userId:string;title:string;deadline:string;contentType:string;requirements:string;durationSpec?:string;contentPillar?:string}){
  try{const user=await requireUser();if(!manager(user))throw new Error("Chỉ quản lý giao việc.");await assertOwner(user,data.userId);

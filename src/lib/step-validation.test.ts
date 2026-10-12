@@ -14,6 +14,9 @@ describe("Workflow business checks",()=>{
   expect(()=>validateStep(3,{quotes:"[]"})).toThrow();
   expect(()=>validateStep(3,{quotes:JSON.stringify([{vendor:"A",price:1},{vendor:"B",price:2},{vendor:"C",price:3}])})).not.toThrow();
  });
+ it("nêu đúng trường còn thiếu khi không thể hoàn tất",()=>{
+  expect(()=>validateStep(2,{exportPort:"Hải Phòng"})).toThrow("importPort, transportMethod, expectedDate");
+ });
  it("tính đúng tháng ngắn và mốc giờ Việt Nam",()=>{
   expect(periodBounds("2026-02-12","month").end.toISOString()).toBe("2026-02-28T17:00:00.000Z");
   expect(periodBounds("2026-10-07","month").end.toISOString()).toBe("2026-10-31T17:00:00.000Z");

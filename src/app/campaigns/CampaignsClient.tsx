@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { createCampaign, updateProductStep } from "./actions";
+import { createCampaign, saveProductLink, updateProductStep } from "./actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, CalendarClock, ExternalLink, ShieldAlert, CheckCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -132,6 +132,14 @@ export default function CampaignsClient({ users, campaigns, products, nowIso }: 
     } else {
       toast({ title: "Lỗi", description: result.error, variant: "destructive" });
     }
+  };
+
+  const handleSaveLink = async (productId: string) => {
+    setLoading(true);
+    const result = await saveProductLink(productId, linkInput[productId] || "");
+    setLoading(false);
+    toast({ title: result.success ? "Đã lưu link" : "Không thể lưu link", description: result.success ? "Link kế hoạch đã được lưu và giữ sau khi tải lại trang." : result.error, variant: result.success ? "default" : "destructive" });
+    if (result.success) router.refresh();
   };
 
   return (
@@ -280,6 +288,9 @@ export default function CampaignsClient({ users, campaigns, products, nowIso }: 
                               value={linkInput[p.id] || p.link || ""} 
                               onChange={e => setLinkInput({...linkInput, [p.id]: e.target.value})}
                             />
+                            <Button type="button" size="sm" variant="outline" onClick={() => void handleSaveLink(p.id)} disabled={loading}>
+                              Lưu link kế hoạch
+                            </Button>
                           </div>
                         )}
 

@@ -7,7 +7,8 @@ export function validateStep(step: number, data: StepFields) {
     10: ["declaration", "lane", "customsStatus"], 11: ["carrier", "vehicle", "pickupAt", "delivered"],
     12: ["lines", "pdfExported"], 13: ["invoiceNumber", "amount", "dueDate", "invoiceIssued", "paid"],
   };
-  for (const key of required[step] || []) if (data[key] === undefined || data[key] === "" || data[key] === false || data[key] === null) throw new Error("Chưa đủ thông tin để hoàn thành bước. Kiểm tra các trường bắt buộc và xác nhận.");
+  const missing = (required[step] || []).filter(key => data[key] === undefined || data[key] === "" || data[key] === false || data[key] === null);
+  if (missing.length) throw new Error(`Chưa đủ thông tin để hoàn thành bước ${step}: ${missing.join(", ")}.`);
   if (step === 5 && data.decision !== "ACCEPT") throw new Error("Chọn đồng ý, quay lại hoặc fail ở phần phản hồi.");
   if (step === 10 && data.customsStatus !== "CLEARED") throw new Error("Tờ khai chưa được thông quan.");
   if (step === 3) {

@@ -15,6 +15,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
   const selectedDate = requestedDate && datePattern.test(requestedDate) ? requestedDate : today;
   const employeeView = activeUser.role === "SALES";
   const range = periodBounds(employeeView ? today : selectedDate, employeeView ? "month" : "day");
+  const dayFilter = { OR: [{ date: { gte: range.start, lt: range.end } }, { checkIn: { gte: range.start, lt: range.end } }] };
 
   const [users, attendances] = await Promise.all([
     db.user.findMany({
@@ -25,7 +26,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
     db.attendance.findMany({
       where: {
         ...(ids ? { userId: { in: ids } } : {}),
-        date: { gte: range.start, lt: range.end },
+        ...(employeeView ? { OR: [{ date: { gte: range.start, lt: range.end } }, { checkIn: { gte: range.start, lt: range.end } }] } : dayFilter),
       },
       orderBy: { checkIn: "asc" },
     }),

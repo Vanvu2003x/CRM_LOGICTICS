@@ -15,8 +15,9 @@ export default async function SocialKpiPage({ searchParams }: { searchParams: Pr
   const dayRange = periodBounds(selectedDate, "day");
   const monthRange = periodBounds(todayInVietnam(), "month");
   const userScope = ids ? { userId: { in: ids } } : {};
+  const selectedDay = { OR: [{ date: { gte: dayRange.start, lt: dayRange.end } }, { checkIn: { gte: dayRange.start, lt: dayRange.end } }] };
   const sessions = await db.attendance.findMany({
-    where: isManager ? { ...userScope, user: { role: "SALES" }, date: { gte: dayRange.start, lt: dayRange.end } } : { userId: activeUser.id, OR: [{ date: { gte: monthRange.start, lt: monthRange.end } }, { checkOut: null }] },
+    where: isManager ? { ...userScope, user: { role: "SALES" }, ...selectedDay } : { userId: activeUser.id, OR: [{ date: { gte: monthRange.start, lt: monthRange.end } }, { checkIn: { gte: monthRange.start, lt: monthRange.end } }, { checkOut: null }] },
     include: { user: { select: publicUserSelect }, posts: { include: { order: true, lead: true }, orderBy: { createdAt: "desc" } } },
     orderBy: { checkIn: "desc" },
     take: isManager ? 100 : 20,

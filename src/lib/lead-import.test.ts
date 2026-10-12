@@ -1,0 +1,28 @@
+import { describe, expect, it } from "vitest";
+import { parseLeadImportMatrix } from "./lead-import";
+
+describe("parseLeadImportMatrix", () => {
+  it("maps Vietnamese customer columns and restores a missing leading zero", () => {
+    const result = parseLeadImportMatrix([
+      ["Tên người liên hệ", "Số điện thoại", "Tên công ty", "Mã số thuế", "Địa chỉ", "Ngành nghề", "Nhu cầu"],
+      ["Phương", 394782738, "LP", "09278274", "Hà Nội", "Logistics", "TQ - VN"],
+    ]);
+    expect(result.valid).toEqual([{ name: "Phương", phone: "0394782738", company: "LP", taxId: "09278274", address: "Hà Nội", industry: "Logistics", needs: "TQ - VN", source: "EXCEL" }]);
+    expect(result.errors).toEqual([]);
+  });
+
+  it("reports invalid and duplicate rows without importing them", () => {
+    const result = parseLeadImportMatrix([
+      ["Tên khách", "Điện thoại", "Công ty"],
+      ["An", "0901234567", "A"],
+      ["An trùng", "0901234567", "A"],
+      ["Thiếu số", "", "B"],
+    ]);
+    expect(result.valid).toHaveLength(1);
+    expect(result.errors.map(item => item.reason)).toEqual(["Trùng số điện thoại trong file", "Thiếu hoặc sai số điện thoại"]);
+  });
+
+  it("requires recognizable name and phone columns", () => {
+    expect(() => parseLeadImportMatrix([["Foo", "Bar"], ["A", "B"]])).toThrow("Không tìm thấy cột");
+  });
+});

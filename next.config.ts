@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  logging: {
+    incomingRequests: { ignore: [/\/(?:api\/)?wsapi\//] },
+  },
 };
 
 export default nextConfig;

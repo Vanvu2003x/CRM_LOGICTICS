@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# CRM private runtime data and verification artifacts
+/uploads/
+/output/
+/tmp/
+/.playwright-cli/
+/prisma/*.db
+/prisma/*.db-journal
+/prisma/*.db-wal
+/prisma/*.db-shm

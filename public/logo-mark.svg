@@ -1,0 +1,9 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Logistics CRM</title>
+  <desc id="desc">Biểu tượng container kết nối hành trình</desc>
+  <rect width="128" height="128" rx="30" fill="#0B5CFF"/>
+  <path d="M22 45.5 64 23l42 22.5v37L64 105 22 82.5v-37Z" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="m64 23 42 22.5-42 23-42-23L64 23Z" fill="#fff" fill-opacity=".25" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M64 68.5v36.5M35 52v23.5M93 52v23.5" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+  <path d="M43 57.5h42M43 68h42M43 78.5h42" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".9"/>
+</svg>

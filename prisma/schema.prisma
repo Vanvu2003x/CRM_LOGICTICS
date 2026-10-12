@@ -1,0 +1,399 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  password  String    @default("123456")
+  extension String?   @unique // Số máy lẻ tổng đài ITY
+  role      String    @default("SALES") // ADMIN, SALES
+  teamId    String?
+  team      Team?     @relation(fields: [teamId], references: [id])
+  sessions  Session[]
+  leads     Lead[]
+  orders    Order[]
+  callLogs  CallLog[]
+
+  // Task Management Relations (Part 3)
+  attendances             Attendance[]
+  campaignProducts        CampaignProduct[]
+  tradeFairParticipations TradeFairParticipation[]
+  tradeFairRegistrations  TradeFairRegistration[]
+  socialPosts             SocialPost[]
+  dataRequests            LeadDataRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CallLog {
+  id           String    @id @default(cuid())
+  callid       String    @unique
+  phone        String
+  extension    String?
+  salesId      String?
+  sales        User?     @relation(fields: [salesId], references: [id])
+  duration     Int       @default(0)
+  billsec      Int       @default(0)
+  status       String // ANSWERED, NO ANSWER, BUSY, etc.
+  direction    String // inbound, outbound
+  recordingUrl String?
+  demand       String    @default("UNKNOWN")
+  customerName String?
+  company      String?
+  needs        String?
+  userfield    String?
+  leadId       String?
+  orderCode    String?
+  startedAt    DateTime
+  answeredAt   DateTime?
+  endedAt      DateTime?
+  sourceTelco  String?
+  destTelco    String?
+  hangupBy     String?
+  hangupCause  String?
+  sipCode      String?
+  hotline      String?
+  domain       String?
+  mos          Float?
+  createdAt    DateTime  @default(now())
+}
+
+model Lead {
+  id                  String           @id @default(cuid())
+  name                String
+  phone               String
+  company             String?
+  taxId               String?
+  address             String?
+  industry            String?
+  needs               String? // Nhu cầu cơ bản
+  isInterested        Boolean          @default(true)
+  source              String? // ITY hoặc nguồn khác
+  callDurationSeconds Int              @default(0)
+  callCount           Int              @default(0)
+  salesId             String?
+  sales               User?            @relation(fields: [salesId], references: [id])
+  status              String           @default("NEW") // NEW, IN_PROGRESS, CONVERTED, FAILED
+  lastContactAt       DateTime?
+  firstContactAt      DateTime?
+  interestState       String           @default("UNKNOWN")
+  callOutcome         String           @default("UNKNOWN") // UNKNOWN, NO_ANSWER, NO_NEED, USING_OTHER, INTERESTED
+  followUpAt          DateTime?
+  contactHistory      String           @default("[]")
+  originRef           String?
+  importBatchId       String?
+  importBatch         LeadImportBatch? @relation(fields: [importBatchId], references: [id])
+  assignedAt          DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  order               Order?
+  tradeFairLeads      TradeFairLead[]
+  socialPosts         SocialPost[]
+}
+
+model LeadImportBatch {
+  id            String   @id @default(cuid())
+  filename      String
+  source        String   @default("EXCEL")
+  totalRows     Int
+  importedRows  Int
+  duplicateRows Int      @default(0)
+  createdById   String
+  createdAt     DateTime @default(now())
+  leads         Lead[]
+}
+
+model LeadDataRequest {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status       String    @default("OPEN")
+  note         String?
+  requestedAt  DateTime  @default(now())
+  resolvedAt   DateTime?
+  resolvedById String?
+}
+
+model Order {
+  id      String  @id @default(cuid())
+  code    String  @unique
+  leadId  String? @unique
+  lead    Lead?   @relation(fields: [leadId], references: [id])
+  salesId String
+  sales   User    @relation(fields: [salesId], references: [id])
+
+  // Pipeline status
+  currentStep Int    @default(1) // 1 to 13
+  status      String @default("IN_PROGRESS") // IN_PROGRESS, COMPLETED, FAILED
+
+  // Step 2 Info
+  exportPort       String?
+  importPort       String?
+  type             String? // EXPORT, IMPORT
+  transportMethod  String? // FCL, LCL, AIR...
+  expectedDate     DateTime?
+  itemName         String?
+  quantity         String?
+  pickupLocation   String?
+  deliveryLocation String?
+  incoterms        String?
+  notes            String?
+  customerName     String?
+  stepsData        String       @default("{}")
+  workflowHistory  String       @default("[]")
+  completedSteps   String       @default("[]")
+  completedAt      DateTime?
+  failedAt         DateTime?
+  failureReason    String?
+  agentId          String?
+  invoiceNumber    String?
+  invoiceIssuedAt  DateTime?
+  invoiceAmount    Float?
+  invoiceCurrency  String       @default("VND")
+  dueDate          DateTime?
+  paidAt           DateTime?
+  files            Attachment[]
+  socialPosts      SocialPost[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- PHẦN 3: ĐẦU MỤC CÔNG VIỆC (TASK MANAGEMENT) ---
+
+// 3.1. Chấm Công (Attendance)
+model Attendance {
+  id                String       @id @default(cuid())
+  userId            String
+  user              User         @relation(fields: [userId], references: [id])
+  date              DateTime     @default(now()) // Ngày làm việc
+  checkIn           DateTime // Giờ vào
+  checkOut          DateTime? // Giờ ra
+  checkInLatitude   Float?
+  checkInLongitude  Float?
+  checkInAccuracy   Float?
+  checkOutLatitude  Float?
+  checkOutLongitude Float?
+  checkOutAccuracy  Float?
+  closeType         String? // MANUAL, AUTO_END_OF_DAY, ADMIN
+  closeNote         String?
+  posts             SocialPost[]
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
+// 3.2. Làm Truyền Thông (Marketing Campaigns)
+model Campaign {
+  id           String            @id @default(cuid())
+  name         String
+  description  String?
+  deadline     DateTime
+  startDate    DateTime?
+  endDate      DateTime?
+  participants String            @default("[]")
+  requirements String? // e.g. "1 video, 1 bài viết"
+  status       String            @default("IN_PROGRESS") // IN_PROGRESS, COMPLETED
+  products     CampaignProduct[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}
+
+model CampaignProduct {
+  id         String   @id @default(cuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id])
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+
+  type String @default("NORMAL") // NORMAL, PENALTY (Phạt)
+
+  // Pipeline 5 bước: SCRIPT_DRAFT, SCRIPT_APPROVED, PRODUCT_DRAFT, PRODUCT_APPROVED, DONE
+  step String @default("SCRIPT_DRAFT")
+
+  link          String? // Link sản phẩm đã nộp
+  notes         String?
+  title         String?
+  deadline      DateTime?
+  contentType   String    @default("VIDEO")
+  requirements  String?
+  durationSpec  String? // Thời lượng / số lượng yêu cầu, ví dụ 1p20-1p30s
+  contentPillar String? // INSIGHT, TREND, NEWS, BRAND, OTHER
+  history       String    @default("[]")
+  submittedAt   DateTime?
+  completedAt   DateTime?
+  penaltyKey    String?   @unique
+  parentId      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 3.3. Hội Chợ (Trade Fairs)
+model TradeFair {
+  id             String                   @id @default(cuid())
+  name           String
+  location       String?
+  description    String?
+  startDate      DateTime
+  endDate        DateTime
+  registrations  TradeFairRegistration[]
+  participations TradeFairParticipation[]
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+}
+
+model TradeFairRegistration {
+  id            String    @id @default(cuid())
+  fairId        String
+  fair          TradeFair @relation(fields: [fairId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status        String    @default("PENDING") // PENDING, PARTICIPATING, DECLINED
+  declineReason String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([fairId, userId])
+}
+
+model TradeFairParticipation {
+  id     String    @id @default(cuid())
+  fairId String
+  fair   TradeFair @relation(fields: [fairId], references: [id], onDelete: Cascade)
+  userId String
+  user   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  session     String // MORNING, AFTERNOON, BOTH, NONE
+  day         DateTime?
+  slot        String?
+  submittedAt DateTime?
+  resultAt    DateTime?
+  resultNote  String?
+  reason      String? // Lý do nếu NONE
+
+  marketingLink String? // Link bài đăng sau hội chợ (Deadline 1 ngày)
+
+  leads TradeFairLead[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TradeFairLead {
+  id              String                 @id @default(cuid())
+  participationId String
+  participation   TradeFairParticipation @relation(fields: [participationId], references: [id], onDelete: Cascade)
+
+  contactName String?
+  companyName String
+  taxId       String?
+  phone       String?
+  industry    String?
+  address     String?
+  notes       String? // Nội dung trao đổi
+  quality     String  @default("WARM") // HOT, WARM, COLD
+  crmLeadId   String?
+  crmLead     Lead?   @relation(fields: [crmLeadId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 3.4. KPI MXH (Social Media Posts)
+model SocialPost {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id])
+  attendanceId String? // Gắn với một ca làm việc cụ thể
+  attendance   Attendance? @relation(fields: [attendanceId], references: [id])
+
+  type       String    @default("POST") // POST, COMMENT
+  link       String
+  imageUrl   String?
+  orderNotes String? // Ghi chú thông tin đơn hàng
+  platform   String    @default("FACEBOOK") // FACEBOOK, ZALO, TIKTOK, LINKEDIN, OTHER
+  quality    String    @default("CONTENT") // CONTENT, INQUIRY, QUALIFIED
+  orderId    String?
+  order      Order?    @relation(fields: [orderId], references: [id])
+  leadId     String?
+  lead       Lead?     @relation(fields: [leadId], references: [id])
+  reviewedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Team {
+  id    String @id @default(cuid())
+  name  String @unique
+  users User[]
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+}
+
+model Agent {
+  id          String  @id @default(cuid())
+  name        String
+  country     String
+  city        String
+  rating      Int     @default(4)
+  status      String  @default("ACTIVE")
+  contact     String
+  contactName String?
+  phone       String?
+  whatsapp    String?
+  email       String?
+  notes       String?
+}
+
+model Setting {
+  key   String @id
+  value String
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  userId    String
+  text      String
+  href      String
+  createdAt DateTime @default(now())
+}
+
+model Reminder {
+  id     String   @id @default(cuid())
+  key    String   @unique
+  userId String
+  title  String
+  href   String
+  dueAt  DateTime
+  kind   String
+  status String   @default("OPEN")
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id])
+  filename  String
+  path      String
+  mime      String
+  step      Int
+  kind      String?
+  createdAt DateTime @default(now())
+}

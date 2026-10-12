@@ -1,0 +1,5 @@
+"use client";
+import { ResponsiveContainer,CartesianGrid,XAxis,YAxis,Tooltip,Legend,AreaChart,Area } from "recharts";
+export default function PerformanceChart({data}:{data:{name:string;calls:number;leads:number;completed:number}[]}) {
+ return <div className="h-56 min-w-0 sm:h-64"><ResponsiveContainer width="100%" height="100%"><AreaChart data={data} margin={{top:4,right:4,left:-20,bottom:0}}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0"/><XAxis dataKey="name" minTickGap={20} tick={{fontSize:10}}/><YAxis allowDecimals={false} width={42} tick={{fontSize:10}}/><Tooltip contentStyle={{fontSize:11,borderRadius:8}}/><Legend wrapperStyle={{fontSize:10}}/><Area type="monotone" dataKey="calls" name="Cuộc gọi" stroke="#2563eb" fill="#dbeafe" strokeWidth={2}/><Area type="monotone" dataKey="leads" name="Lead mới" stroke="#14b8a6" fill="#ccfbf1" strokeWidth={2}/><Area type="monotone" dataKey="completed" name="Đơn hoàn thành" stroke="#8b5cf6" fill="#ede9fe" strokeWidth={2}/></AreaChart></ResponsiveContainer></div>;
+}

@@ -26,6 +26,11 @@ describe("attendance dashboard", () => {
     expect(shouldAutoCloseAttendance(session, new Date("2026-10-08T10:30:00.000Z"))).toBe(true);
   });
 
+  it("keeps a shift started after 17:30 open for KPI tracking", () => {
+    const session = { id: "late-start", userId: "u2", checkIn: "2026-10-08T12:38:00.000Z", checkOut: null };
+    expect(shouldAutoCloseAttendance(session, new Date("2026-10-08T13:00:00.000Z"))).toBe(false);
+  });
+
   it("allows another shift after the previous shift has closed", () => {
     expect(canStartAttendanceSession([])).toBe(true);
     expect(canStartAttendanceSession([{ id: "closed", userId: "u2", checkIn: "2026-10-08T01:00:00.000Z", checkOut: "2026-10-08T05:00:00.000Z" }])).toBe(true);

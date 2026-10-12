@@ -34,7 +34,10 @@ export function automaticCheckoutAt(checkIn: Date | string) {
 }
 
 export function shouldAutoCloseAttendance(session: AttendanceSession, now = new Date()) {
-  return !session.checkOut && now.getTime() >= automaticCheckoutAt(session.checkIn).getTime();
+  const cutoff = automaticCheckoutAt(session.checkIn);
+  // A late check-in must stay open; otherwise opening KPI after 17:30
+  // would immediately close the newly created session.
+  return !session.checkOut && new Date(session.checkIn).getTime() < cutoff.getTime() && now.getTime() >= cutoff.getTime();
 }
 
 export function attendanceMinutes(sessions: AttendanceSession[], now = new Date()) {

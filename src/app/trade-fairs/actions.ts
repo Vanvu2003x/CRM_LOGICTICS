@@ -88,16 +88,19 @@ export async function addTradeFairLead(participationId: string, data: TradeFairL
       const historyEntry = tradeFairLeadHistoryEntry({ ...normalized, fairName: participation.fair.name });
       const lead = existing
         ? await tx.lead.update({ where: { id: existing.id }, data: {
-            company: existing.company || normalized.companyName,
-            taxId: existing.taxId || normalized.taxId,
-            address: existing.address || normalized.address,
-            industry: existing.industry || normalized.industry,
-            needs: existing.needs || normalized.notes,
-            source: existing.source || "TRADE_FAIR",
-            originRef: existing.originRef || participation.fairId,
-            isInterested: existing.isInterested || normalized.quality !== "COLD",
-            interestState: existing.interestState === "UNKNOWN" && normalized.quality !== "COLD" ? "YES" : existing.interestState,
-            followUpAt: existing.followUpAt || new Date(Date.now() + DAY),
+            name: normalized.contactName,
+            phone: normalized.phone,
+            company: normalized.companyName,
+            taxId: normalized.taxId,
+            address: normalized.address,
+            industry: normalized.industry,
+            needs: normalized.notes,
+            source: "TRADE_FAIR",
+            originRef: participation.fairId,
+            isInterested: normalized.quality !== "COLD",
+            interestState: normalized.quality === "COLD" ? "UNKNOWN" : "YES",
+            followUpAt: new Date(Date.now() + DAY),
+            lastContactAt: new Date(),
             contactHistory: JSON.stringify([...readJson<unknown[]>(existing.contactHistory, []), historyEntry]),
           } })
         : await tx.lead.create({ data: {

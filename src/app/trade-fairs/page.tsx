@@ -13,7 +13,7 @@ export async function getTradeFairsData(activeUser: PublicUser, fairId?: string)
       registrations: { where: { userId: { in: userIds } }, include: { user: { select: publicUserSelect } } },
       participations: {
         where: { userId: { in: userIds } },
-        include: { user: { select: publicUserSelect }, leads: { include: { crmLead: { include: { order: true } } }, orderBy: { createdAt: "desc" } } },
+        include: { user: { select: publicUserSelect }, leads: { include: { crmLead: { include: { order: true, sales: { select: publicUserSelect } } } }, orderBy: { createdAt: "desc" } } },
         orderBy: [{ day: "asc" }, { user: { name: "asc" } }],
       },
     },

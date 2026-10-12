@@ -68,7 +68,7 @@ export function LeadDataCenter() {
 
   async function downloadTemplate() {
     const XLSX = await import("xlsx");
-    const sample = [["Tên người liên hệ", "Số điện thoại", "Tên công ty", "Mã số thuế", "Địa chỉ công ty", "Ngành nghề", "Nhu cầu / nội dung trao đổi", "Nguồn khách"], ["Nguyễn Văn A", "0901234567", "Công ty ABC", "0101234567", "Hà Nội", "Logistics", "Cần tư vấn vận chuyển", "EXCEL"]];
+    const sample = [["Tên người liên hệ", "Số điện thoại", "Tên công ty", "Ngày thành lập công ty", "Mã số thuế", "Địa chỉ công ty", "Ngành nghề", "Nhu cầu / nội dung trao đổi", "Nguồn khách"], ["Nguyễn Văn A", "0901234567", "Công ty ABC", "12/03/2010", "0101234567", "Hà Nội", "Logistics", "Cần tư vấn vận chuyển", "EXCEL"]];
     const book = XLSX.utils.book_new(); const sheet = XLSX.utils.aoa_to_sheet(sample);
     sheet["!cols"] = [22, 17, 24, 16, 28, 18, 34, 15].map((wch) => ({ wch }));
     XLSX.utils.book_append_sheet(book, sheet, "Khach hang"); XLSX.writeFile(book, "mau-import-khach-hang.xlsx");

@@ -39,7 +39,7 @@ export const navigation: NavigationItem[] = [
     section: "sales" 
   },
   { 
-    name: "Khách hàng đã liên hệ", 
+    name: "Khách hàng", 
     href: "/leads", 
     icon: UsersRound, 
     section: "sales" 

@@ -1,4 +1,4 @@
-export type LeadImportRow = { name:string;phone:string;company:string;taxId:string;address:string;industry:string;needs:string;source:string };
+export type LeadImportRow = { name:string;phone:string;company:string;companyFoundedAt:string;taxId:string;address:string;industry:string;needs:string;source:string };
 export type LeadImportError = { row:number;name:string;phone:string;reason:string };
 
 const clean = (value:unknown) => String(value ?? "").replace(/\s+/g," ").trim();
@@ -6,7 +6,7 @@ const key = (value:unknown) => clean(value).normalize("NFD").replace(/[\u0300-\u
 const aliases:Record<keyof LeadImportRow,string[]> = {
   name:["tennguoilienhe","tenkhach","hoten","name","contactname"],
   phone:["sodienthoai","dienthoai","sdt","phone","mobile"],
-  company:["tencongty","congty","company"], taxId:["masothue","mst","taxid"],
+  company:["tencongty","congty","company"], companyFoundedAt:["ngaythanhlap","ngaythanhlapcongty","ngaythanhlapdn","companyfoundedat","foundedat"], taxId:["masothue","mst","taxid"],
   address:["diachi","diachicongty","address"], industry:["nganhnghe","industry"],
   needs:["nhucau","noidungtraodoi","nhucaunoidungtraodoi","needs","note"], source:["nguonkhach","nguon","source"],
 };
@@ -16,6 +16,22 @@ export function normalizeVietnamPhone(value:unknown) {
   if(digits.startsWith("84")&&digits.length>=11)digits="0"+digits.slice(2);
   if(digits.length===9&&!digits.startsWith("0"))digits="0"+digits;
   return digits;
+}
+
+function normalizeCompanyFoundedAt(value:unknown) {
+  const raw=clean(value);
+  if(!raw)return "";
+  if(/^\d+(\.\d+)?$/.test(raw)){
+    const date=new Date(Date.UTC(1899,11,30)+Number(raw)*86400000);
+    return Number.isNaN(date.getTime())?"":date.toISOString().slice(0,10);
+  }
+  const match=raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  const iso=raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  const year=match?Number(match[3]):iso?Number(iso[1]):0;
+  const month=match?Number(match[2]):iso?Number(iso[2]):0;
+  const day=match?Number(match[1]):iso?Number(iso[3]):0;
+  const date=new Date(Date.UTC(year,month-1,day));
+  return year>=1900&&date.getUTCFullYear()===year&&date.getUTCMonth()===month-1&&date.getUTCDate()===day?date.toISOString().slice(0,10):"";
 }
 
 export function parseLeadImportMatrix(matrix:unknown[][]) {
@@ -28,10 +44,10 @@ export function parseLeadImportMatrix(matrix:unknown[][]) {
   matrix.slice(1).forEach((row,index)=>{
     if(!row.some(value=>clean(value)))return;
     const get=(field:keyof LeadImportRow)=>indexes[field]>=0?clean(row[indexes[field]]):"";
-    const name=get("name"),phone=normalizeVietnamPhone(indexes.phone>=0?row[indexes.phone]:"");
-    const problem=!name?"Thiếu tên người liên hệ":!/^0\d{9,10}$/.test(phone)?"Thiếu hoặc sai số điện thoại":phones.has(phone)?"Trùng số điện thoại trong file":"";
+    const name=get("name"),phone=normalizeVietnamPhone(indexes.phone>=0?row[indexes.phone]:""),companyFoundedAt=normalizeCompanyFoundedAt(indexes.companyFoundedAt>=0?row[indexes.companyFoundedAt]:"");
+    const problem=!name?"Thiếu tên người liên hệ":!/^0\d{9,10}$/.test(phone)?"Thiếu hoặc sai số điện thoại":phones.has(phone)?"Trùng số điện thoại trong file":get("companyFoundedAt")&&!companyFoundedAt?"Ngày thành lập không hợp lệ":"";
     if(problem){errors.push({row:index+2,name,phone,reason:problem});return;}
-    phones.add(phone);valid.push({name,phone,company:get("company"),taxId:get("taxId"),address:get("address"),industry:get("industry"),needs:get("needs"),source:get("source")||"EXCEL"});
+    phones.add(phone);valid.push({name,phone,company:get("company"),companyFoundedAt,taxId:get("taxId"),address:get("address"),industry:get("industry"),needs:get("needs"),source:get("source")||"EXCEL"});
   });
   return {valid,errors};
 }

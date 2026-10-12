@@ -4,7 +4,7 @@ import { manager, requireUser } from "@/lib/auth";
 import { parseLeadImportMatrix, type LeadImportRow } from "@/lib/lead-import";
 import { requestHasAllowedOrigin } from "@/lib/request-origin";
 
-const columns:(keyof LeadImportRow)[]=["name","phone","company","taxId","address","industry","needs","source"];
+const columns:(keyof LeadImportRow)[]=["name","phone","company","companyFoundedAt","taxId","address","industry","needs","source"];
 
 export async function POST(request:Request) {
  try{
@@ -23,7 +23,7 @@ export async function POST(request:Request) {
   const filename=typeof body.filename==="string"?body.filename.replace(/[\\/\x00-\x1f]/g,"").slice(0,160)||"data-khach-hang.xlsx":"data-khach-hang.xlsx";
   const batch=await db.$transaction(async tx=>{
    const created=await tx.leadImportBatch.create({data:{filename,source:"EXCEL",totalRows:parsed.valid.length,importedRows:fresh.length,duplicateRows:parsed.valid.length-fresh.length,createdById:user.id}});
-   for(const row of fresh)await tx.lead.create({data:{...row,company:row.company||null,taxId:row.taxId||null,address:row.address||null,industry:row.industry||null,needs:row.needs||null,source:row.source||"EXCEL",salesId:null,interestState:"UNKNOWN",callOutcome:"UNKNOWN",isInterested:false,status:"NEW",importBatchId:created.id}});
+   for(const row of fresh)await tx.lead.create({data:{...row,company:row.company||null,companyFoundedAt:row.companyFoundedAt?new Date(`${row.companyFoundedAt}T12:00:00+07:00`):null,taxId:row.taxId||null,address:row.address||null,industry:row.industry||null,needs:row.needs||null,source:row.source||"EXCEL",salesId:null,interestState:"UNKNOWN",callOutcome:"UNKNOWN",isInterested:false,status:"NEW",importBatchId:created.id}});
    return created;
   });
   return NextResponse.json({success:true,batchId:batch.id,imported:fresh.length,duplicates:parsed.valid.length-fresh.length});

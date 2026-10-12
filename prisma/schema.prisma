@@ -74,6 +74,7 @@ model Lead {
   name                String
   phone               String
   company             String?
+  companyFoundedAt    DateTime?
   taxId               String?
   address             String?
   industry            String?

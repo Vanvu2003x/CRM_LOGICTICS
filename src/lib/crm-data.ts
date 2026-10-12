@@ -21,7 +21,7 @@ export async function scopedData(user: PublicUser) {
   const statuses: Record<string, LeadStatus> = { NEW: "MỚI", IN_PROGRESS: "ĐANG_CHĂM_SÓC", CONVERTED: "CHUYỂN_ĐƠN", FAILED: "FAIL" };
   return {
     leads: leads.map((lead) => ({
-      id: lead.id, name: lead.name, phone: lead.phone, company: lead.company || "", taxId: lead.taxId || "", address: lead.address || "", industry: lead.industry || "", source: lead.source || "",
+      id: lead.id, name: lead.name, phone: lead.phone, company: lead.company || "", companyFoundedAt: lead.companyFoundedAt?.toISOString().slice(0, 10) || null, taxId: lead.taxId || "", address: lead.address || "", industry: lead.industry || "", source: lead.source || "",
       needs: lead.needs || "", isInterested: lead.interestState === "YES", interestState: lead.interestState,
       callDurationSeconds: lead.callDurationSeconds, callCount: lead.callCount, status: statuses[lead.status] || "MỚI",
       lastCall: (lead.lastContactAt || lead.createdAt).toISOString().slice(0, 10), sales: lead.sales?.name || "Chưa giao",

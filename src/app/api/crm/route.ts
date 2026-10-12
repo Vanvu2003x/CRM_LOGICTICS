@@ -43,6 +43,7 @@ export async function POST(request: Request) {
       const updates = {
         name: typeof data.name === "string" ? text(data.name, 200) : lead?.name || "", phone: typeof data.phone === "string" ? text(data.phone, 30) : lead?.phone || "",
         company: typeof data.company === "string" ? text(data.company, 300) : lead?.company,
+        companyFoundedAt: typeof data.companyFoundedAt === "string" && data.companyFoundedAt ? new Date(data.companyFoundedAt + "T12:00:00+07:00") : lead?.companyFoundedAt,
         taxId: typeof data.taxId === "string" ? text(data.taxId, 50) : lead?.taxId,
         address: typeof data.address === "string" ? text(data.address, 500) : lead?.address,
         industry: typeof data.industry === "string" ? text(data.industry, 200) : lead?.industry,
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
       };
       if (!updates.name || !/^\+?[\d\s().-]{7,25}$/.test(updates.phone)) throw new Error("Nhập tên và số điện thoại hợp lệ.");
       if(updates.status==="CONVERTED" && (!lead || !await db.order.findUnique({where:{leadId:id}})))throw new Error("Dùng nút Tạo đơn để chuyển khách thành đơn hàng.");
-      for(const date of [updates.lastContactAt,updates.firstContactAt,updates.followUpAt])if(date&&!Number.isFinite(date.getTime()))throw new Error("Ngày không hợp lệ.");
+      for(const date of [updates.lastContactAt,updates.firstContactAt,updates.followUpAt,updates.companyFoundedAt])if(date&&!Number.isFinite(date.getTime()))throw new Error("Ngày không hợp lệ.");
       if (lead) {
         const history = readJson<unknown[]>(lead.contactHistory, []);
         if (data.lastCall || data.needs || data.promotionSent || data.callOutcome || data.interestState) history.unshift({

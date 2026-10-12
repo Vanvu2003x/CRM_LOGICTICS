@@ -3,6 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { db } from "@/lib/db";
 import { getItyConfig } from "@/lib/ity";
 import { callLogStorageData, parseItyCallLog } from "@/lib/ity-call-log";
+import { autoFollowUpAt } from "@/lib/call-follow-up";
 
 export async function POST(request: Request, { params }: { params: Promise<{ customer: string }> }) {
   const { customer } = await params;
@@ -38,13 +39,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ cus
         : sales ? await tx.lead.findFirst({ where: { salesId: sales.id, phone: call.phone } }) : null;
       const callOutcome = call.callOutcome;
       if (!lead) lead = await tx.lead.create({ data: { name: call.customerName || call.phone, phone: call.phone, company: call.company, source: "ITY", salesId: sales?.id, interestState: call.demand, callOutcome, isInterested: call.demand === "YES", needs: call.needs } });
+      const previousNoAnswerCalls = lead ? await tx.callLog.count({ where: { leadId: lead.id, status: "NO ANSWER" } }) : 0;
+      const automaticFollowUpAt = lead ? autoFollowUpAt(callOutcome, lead.followUpAt, previousNoAnswerCalls, call.startedAt) : null;
       await tx.callLog.create({ data: { ...callLogStorageData(call), salesId: sales?.id, orderCode: linkedOrder?.code, leadId: lead?.id } });
       if (lead) await tx.lead.update({ where: { id: lead.id }, data: {
         callCount: { increment: 1 }, callDurationSeconds: { increment: call.billsec },
         lastContactAt: !lead.lastContactAt || call.startedAt > lead.lastContactAt ? call.startedAt : lead.lastContactAt,
         firstContactAt: !lead.firstContactAt || call.startedAt < lead.firstContactAt ? call.startedAt : lead.firstContactAt,
         ...(callOutcome !== "UNKNOWN" || lead.callOutcome === "UNKNOWN" ? { callOutcome } : {}),
-        ...(call.demand !== "UNKNOWN" ? { interestState: call.demand, isInterested: call.demand === "YES" } : {})
+        ...(call.demand !== "UNKNOWN" ? { interestState: call.demand, isInterested: call.demand === "YES" } : {}),
+        ...(automaticFollowUpAt ? { followUpAt: automaticFollowUpAt } : {})
       } });
       return { duplicate: false };
     });

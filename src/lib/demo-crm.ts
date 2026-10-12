@@ -33,6 +33,11 @@ export type DemoOrder = {
   date: string;
   sales: string;
   status: "IN_PROGRESS" | "COMPLETED" | "FAILED";
+  exportPort?: string | null;
+  importPort?: string | null;
+  expectedDate?: string | null;
+  quantity?: string | null;
+  incoterms?: string | null;
   dbId?: string;
   salesId?: string;
   leadId?: string | null;

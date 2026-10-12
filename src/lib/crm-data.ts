@@ -32,6 +32,7 @@ export async function scopedData(user: PublicUser) {
       id: order.code, dbId: order.id, customer: order.customerName || order.lead?.company || order.lead?.name || order.code,
       step: order.currentStep, type: order.type === "IMPORT" ? "IMPORT" as const : "EXPORT" as const,
       date: order.createdAt.toISOString().slice(0, 10), sales: order.sales.name, salesId: order.salesId,
+      exportPort: order.exportPort, importPort: order.importPort, expectedDate: order.expectedDate?.toISOString() || null, quantity: order.quantity, incoterms: order.incoterms,
       status: order.status as "IN_PROGRESS" | "COMPLETED" | "FAILED", leadId: order.leadId,
       data: readJson<SavedSteps>(order.stepsData, {}), completedSteps: readJson<number[]>(order.completedSteps, []),
       history: readJson<unknown[]>(order.workflowHistory, []), completedAt: order.completedAt?.toISOString() || null,

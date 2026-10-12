@@ -7,6 +7,7 @@ import { canChangeTradeFairSession, fairReportDeadline, toggleFairSession, type 
 import { addDays, format, isAfter, isBefore, isSameDay } from "date-fns";
 import { vi } from "date-fns/locale";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, CalendarDays, Check, CircleAlert, ExternalLink, FileText, MapPin, Plus, Sparkles, TentTree, Users, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Building2, CalendarDays, Check, ChevronDown, ChevronUp, CircleAlert, ExternalLink, FileText, MapPin, Plus, Sparkles, TentTree, Users, X } from "lucide-react";
 import { addTradeFairLead, createTradeFair, updateFairRegistration, updateParticipation } from "./actions";
 
 type FairLead = TradeFairLead & { crmLead: (Lead & { order: Order | null }) | null };
@@ -46,12 +47,14 @@ function fairPhase(fair: Fair, now: Date): "ACTIVE" | "UPCOMING" | "PAST" {
   return isBefore(now, start) ? "UPCOMING" : isBefore(now, end) ? "ACTIVE" : "PAST";
 }
 
-function PhaseHeader({ phase, count }: { phase: "ACTIVE" | "UPCOMING" | "PAST"; count: number }) {
+function PhaseHeader({ phase, count, action }: { phase: "ACTIVE" | "UPCOMING" | "PAST"; count: number; action?: React.ReactNode }) {
   const meta = { ACTIVE: ["Đang diễn ra", "Theo dõi đầy đủ lịch, khách và kết quả trong ngày.", "border-emerald-200 bg-emerald-50 text-emerald-800"], UPCOMING: ["Sắp diễn ra", "Chuẩn bị nhân sự, lịch tham gia và thông tin trước ngày bắt đầu.", "border-blue-200 bg-blue-50 text-blue-800"], PAST: ["Đã diễn ra", "Nhập bổ sung kết quả, link truyền thông và theo dõi chuyển đổi.", "border-slate-200 bg-slate-100 text-slate-700"] }[phase];
-  return <div className={`flex flex-wrap items-center justify-between gap-2 rounded-2xl border px-4 py-3 ${meta[2]}`}><div><h2 className="font-bold">{meta[0]}</h2><p className="mt-0.5 text-xs opacity-75">{meta[1]}</p></div><span className="rounded-full bg-white/80 px-2.5 py-1 text-xs font-bold">{count} hội chợ</span></div>;
+  return <div className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 ${meta[2]}`}><div><h2 className="font-bold">{meta[0]}</h2><p className="mt-0.5 text-xs opacity-75">{meta[1]}</p></div><div className="flex items-center gap-2"><span className="rounded-full bg-white/80 px-2.5 py-1 text-xs font-bold">{count} hội chợ</span>{action}</div></div>;
 }
 
-export default function TradeFairsClient({ activeUser, users, fairs, isManager, nowIso }: { activeUser: PublicUser; users: PublicUser[]; fairs: Fair[]; isManager: boolean; nowIso: string }) {
+type ViewMode = "overview" | "list" | "detail";
+
+export default function TradeFairsClient({ activeUser, users, fairs, isManager, nowIso, mode = "overview", phaseFilter, detailFairId }: { activeUser: PublicUser; users: PublicUser[]; fairs: Fair[]; isManager: boolean; nowIso: string; mode?: ViewMode; phaseFilter?: "UPCOMING" | "PAST"; detailFairId?: string }) {
   const now = new Date(nowIso);
   const allParts = fairs.flatMap(fair => fair.participations);
   const allLeads = allParts.flatMap(part => part.leads);
@@ -71,7 +74,7 @@ export default function TradeFairsClient({ activeUser, users, fairs, isManager, 
       <Kpi icon={Building2} label="Khách tiếp cận" value={allLeads.length} note={`${allLeads.filter(l=>l.quality==="HOT").length} khách HOT`} color="emerald" />
       <Kpi icon={CircleAlert} label="Cần hoàn tất" value={missing} note="quá hạn kết quả/link" color="amber" />
     </div>
-    {fairs.length === 0 ? <EmptyState isManager={isManager} /> : isManager ? <AdminView fairs={fairs} now={now} /> : <SalesView fairs={fairs} activeUser={activeUser} now={now} />}
+    {fairs.length === 0 ? <EmptyState isManager={isManager} /> : isManager ? <AdminView fairs={fairs} now={now} mode={mode} phaseFilter={phaseFilter} detailFairId={detailFairId} /> : <SalesView fairs={fairs} activeUser={activeUser} now={now} mode={mode} phaseFilter={phaseFilter} detailFairId={detailFairId} />}
   </div>;
 }
 
@@ -82,11 +85,20 @@ function Kpi({ icon: Icon, label, value, note, color }: { icon: typeof CalendarD
 
 function EmptyState({ isManager }: { isManager: boolean }) { return <div className="rounded-3xl border border-dashed bg-white px-6 py-16 text-center"><TentTree className="mx-auto size-10 text-blue-400"/><h2 className="mt-4 font-semibold text-slate-900">Chưa có chiến dịch hội chợ</h2><p className="mt-2 text-sm text-slate-500">{isManager ? "Tạo chiến dịch đầu tiên để nhân viên chọn lịch tham gia." : "Admin chưa phân công chiến dịch hội chợ nào."}</p></div>; }
 
-function AdminView({ fairs, now }: { fairs: Fair[]; now: Date }) {
-
-  const paging=useListPagination(fairs,"",5);
+function AdminView({ fairs, now, mode, phaseFilter, detailFairId }: { fairs: Fair[]; now: Date; mode: ViewMode; phaseFilter?: "UPCOMING" | "PAST"; detailFairId?: string }) {
+  const [activeOpen, setActiveOpen] = useState(true);
+  const scopedFairs = phaseFilter ? fairs.filter(fair => fairPhase(fair, now) === phaseFilter) : fairs;
+  const paging=useListPagination(scopedFairs,"",5);
   const grouped=(['ACTIVE','UPCOMING','PAST'] as const).map(phase=>({phase,items:paging.items.filter(fair=>fairPhase(fair,now)===phase)})).filter(group=>group.items.length);
-  return <><div className="space-y-5">{grouped.map(group=><div key={group.phase} className="space-y-3"><PhaseHeader phase={group.phase} count={group.items.length}/>{group.items.map(fair => {
+  if (mode === "detail") {
+    const fair = fairs.find(item => item.id === detailFairId);
+    return fair ? <div className="space-y-4"><Link href="/trade-fairs" className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700"><ArrowLeft className="size-4"/>Quay lại tổng quan hội chợ</Link><AdminFairCard fair={fair} now={now}/></div> : <EmptyInline text="Không tìm thấy hội chợ."/>;
+  }
+  if (mode === "list") return <div className="space-y-4"><Link href="/trade-fairs" className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700"><ArrowLeft className="size-4"/>Quay lại tổng quan hội chợ</Link><PhaseHeader phase={phaseFilter || "UPCOMING"} count={scopedFairs.length}/><div className="space-y-3">{scopedFairs.map(fair => <FairSummaryCard key={fair.id} fair={fair} now={now}/>)}</div>{paging.controls}</div>;
+  return <><div className="space-y-5">{grouped.map(group=><div key={group.phase} className="space-y-3"><PhaseHeader phase={group.phase} count={group.items.length} action={group.phase === "ACTIVE" ? <button type="button" onClick={()=>setActiveOpen(value=>!value)} className="inline-flex items-center gap-1 rounded-lg bg-white/70 px-2.5 py-1.5 text-xs font-semibold hover:bg-white" aria-expanded={activeOpen}>{activeOpen ? <ChevronUp className="size-3.5"/> : <ChevronDown className="size-3.5"/>}{activeOpen ? "Thu gọn" : "Mở rộng"}</button> : <Link href={`/trade-fairs/phase/${group.phase.toLowerCase()}`} className="inline-flex items-center gap-1 rounded-lg bg-white/70 px-2.5 py-1.5 text-xs font-semibold hover:bg-white">Xem danh sách<ArrowRight className="size-3.5"/></Link>}/>{group.phase === "ACTIVE" ? activeOpen && group.items.map(fair => <AdminFairCard key={fair.id} fair={fair} now={now}/>) : <div className="space-y-3">{group.items.map(fair => <FairSummaryCard key={fair.id} fair={fair} now={now}/>)}</div>}</div>)}</div>{paging.controls}</>;
+}
+
+function AdminFairCard({ fair, now }: { fair: Fair; now: Date }) {
     const leads = fair.participations.flatMap(part=>part.leads.map(lead=>({lead,part})));
     const wins = leads.filter(({lead})=>lead.crmLead?.order?.status==="COMPLETED").length;
     return <section key={fair.id} className="overflow-hidden rounded-3xl border bg-white shadow-sm">
@@ -97,7 +109,12 @@ function AdminView({ fairs, now }: { fairs: Fair[]; now: Date }) {
         <TabsContent value="performance" className="mt-4"><Performance fair={fair}/></TabsContent>
       </Tabs>
     </section>;
-  })}</div>)}</div>{paging.controls}</>;
+}
+
+function FairSummaryCard({ fair, now }: { fair: Fair; now: Date }) {
+  const leads = fair.participations.flatMap(part => part.leads);
+  const wins = leads.filter(lead => lead.crmLead?.order?.status === "COMPLETED").length;
+  return <Link href={`/trade-fairs/detail/${fair.id}`} className="group block rounded-2xl border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-slate-950 group-hover:text-blue-700">{fair.name}</h3><StatePill fair={fair} now={now}/></div><div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500"><span className="flex items-center gap-1.5"><CalendarDays className="size-3.5"/>{format(new Date(fair.startDate),"dd/MM/yyyy")} – {format(new Date(fair.endDate),"dd/MM/yyyy")}</span>{fair.location&&<span className="flex items-center gap-1.5"><MapPin className="size-3.5"/>{fair.location}</span>}</div></div><div className="flex items-center gap-2"><MiniStat value={fair.registrations.filter(r=>r.status==="PARTICIPATING").length} label="tham gia"/><MiniStat value={leads.length} label="khách"/><MiniStat value={wins} label="win"/><ArrowRight className="ml-1 size-5 text-blue-500 transition group-hover:translate-x-1"/></div></div></Link>;
 }
 
 function MiniStat({value,label}:{value:number;label:string}) { return <div className="min-w-16 rounded-xl border bg-white px-3 py-2"><b className="block text-base text-slate-950">{value}</b><span className="text-[10px] text-slate-500">{label}</span></div>; }
@@ -123,13 +140,25 @@ function Performance({ fair }: { fair: Fair }) {
 
 function Metric({value,label}:{value:number;label:string}) { return <div className="rounded-xl bg-slate-50 px-2 py-2.5"><b className="block">{value}</b><span className="text-[9px] uppercase text-slate-500">{label}</span></div>; }
 
-function SalesView({ fairs, activeUser, now }: { fairs: Fair[]; activeUser: PublicUser; now: Date }) {
-
-  const paging=useListPagination(fairs,"",5);
+function SalesView({ fairs, activeUser, now, mode, phaseFilter, detailFairId }: { fairs: Fair[]; activeUser: PublicUser; now: Date; mode: ViewMode; phaseFilter?: "UPCOMING" | "PAST"; detailFairId?: string }) {
+  const [activeOpen, setActiveOpen] = useState(true);
+  const scopedFairs = phaseFilter ? fairs.filter(fair => fairPhase(fair, now) === phaseFilter) : fairs;
+  const paging=useListPagination(scopedFairs,"",5);
   const grouped=(['ACTIVE','UPCOMING','PAST'] as const).map(phase=>({phase,items:paging.items.filter(fair=>fairPhase(fair,now)===phase)})).filter(group=>group.items.length);
-  return <><div className="space-y-5">{grouped.map(group=><div key={group.phase} className="space-y-3"><PhaseHeader phase={group.phase} count={group.items.length}/>{group.items.map(fair=>{const reg=fair.registrations.find(r=>r.userId===activeUser.id);const parts=fair.participations.filter(p=>p.userId===activeUser.id);return <section key={fair.id} className="overflow-hidden rounded-3xl border bg-white shadow-sm"><div className="crm-themed-subtle border-b bg-[linear-gradient(120deg,#f8fafc,#eff6ff)] p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><div className="flex flex-wrap items-center gap-2"><h2 className="text-lg font-bold text-slate-950">{fair.name}</h2><StatePill fair={fair} now={now}/></div><p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500"><span className="flex items-center gap-1.5"><CalendarDays className="size-3.5"/>{format(new Date(fair.startDate),"dd/MM")} – {format(new Date(fair.endDate),"dd/MM/yyyy")}</span>{fair.location&&<span className="flex items-center gap-1.5"><MapPin className="size-3.5"/>{fair.location}</span>}</p>{fair.description&&<p className="mt-3 max-w-2xl text-xs leading-5 text-slate-600">{fair.description}</p>}</div><DeclineButton fair={fair} registration={reg} userId={activeUser.id}/></div></div>
-      {reg?.status==="DECLINED"?<div className="p-5"><div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm text-rose-800"><b>Đã báo không tham gia</b><p className="mt-1 text-xs">{reg.declineReason}</p></div></div>:<div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:p-5"><div className="space-y-3"><div><h3 className="text-sm font-semibold">Chọn lịch tham gia</h3><p className="mt-1 text-xs text-slate-500">Có thể chọn sáng, chiều hoặc cả ngày. Thay đổi trước khi hội chợ diễn ra.</p></div><FairDays parts={parts} fair={fair} now={now}/></div><aside className="rounded-2xl border bg-slate-50/60 p-4"><div className="flex items-center gap-2"><Sparkles className="size-4 text-violet-600"/><h3 className="text-sm font-semibold">Kết quả của bạn</h3></div><div className="mt-4 grid grid-cols-2 gap-2"><Metric value={parts.reduce((s,p)=>s+sessionCount(p.session),0)} label="ca chọn"/><Metric value={parts.reduce((s,p)=>s+p.leads.length,0)} label="khách"/><Metric value={parts.flatMap(p=>p.leads).filter(l=>l.quality==="HOT").length} label="HOT"/><Metric value={parts.filter(p=>p.marketingLink).length} label="link đã nộp"/></div><p className="mt-4 rounded-xl bg-blue-50 p-3 text-[11px] leading-5 text-blue-700">Sau mỗi ngày tham gia, hãy nhập khách đã tiếp cận và link truyền thông trước 23:59 ngày hôm sau.</p></aside></div>}
-    </section>})}</div>)}</div>{paging.controls}</>;
+  if (mode === "detail") {
+    const fair = fairs.find(item => item.id === detailFairId);
+    return fair ? <div className="space-y-4"><Link href="/trade-fairs" className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700"><ArrowLeft className="size-4"/>Quay lại tổng quan hội chợ</Link><SalesFairCard fair={fair} activeUser={activeUser} now={now}/></div> : <EmptyInline text="Không tìm thấy hội chợ."/>;
+  }
+  if (mode === "list") return <div className="space-y-4"><Link href="/trade-fairs" className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700"><ArrowLeft className="size-4"/>Quay lại tổng quan hội chợ</Link><PhaseHeader phase={phaseFilter || "UPCOMING"} count={scopedFairs.length}/><div className="space-y-3">{scopedFairs.map(fair => <FairSummaryCard key={fair.id} fair={fair} now={now}/>)}</div>{paging.controls}</div>;
+  return <><div className="space-y-5">{grouped.map(group=><div key={group.phase} className="space-y-3"><PhaseHeader phase={group.phase} count={group.items.length} action={group.phase === "ACTIVE" ? <button type="button" onClick={()=>setActiveOpen(value=>!value)} className="inline-flex items-center gap-1 rounded-lg bg-white/70 px-2.5 py-1.5 text-xs font-semibold hover:bg-white" aria-expanded={activeOpen}>{activeOpen ? <ChevronUp className="size-3.5"/> : <ChevronDown className="size-3.5"/>}{activeOpen ? "Thu gọn" : "Mở rộng"}</button> : <Link href={`/trade-fairs/phase/${group.phase.toLowerCase()}`} className="inline-flex items-center gap-1 rounded-lg bg-white/70 px-2.5 py-1.5 text-xs font-semibold hover:bg-white">Xem danh sách<ArrowRight className="size-3.5"/></Link>}/>{group.phase === "ACTIVE" ? activeOpen && group.items.map(fair => <SalesFairCard key={fair.id} fair={fair} activeUser={activeUser} now={now}/>) : <div className="space-y-3">{group.items.map(fair => <FairSummaryCard key={fair.id} fair={fair} now={now}/>)}</div>}</div>)}</div>{paging.controls}</>;
+}
+
+function SalesFairCard({ fair, activeUser, now }: { fair: Fair; activeUser: PublicUser; now: Date }) {
+  const reg=fair.registrations.find(r=>r.userId===activeUser.id);
+  const parts=fair.participations.filter(p=>p.userId===activeUser.id);
+  return <section className="overflow-hidden rounded-3xl border bg-white shadow-sm"><div className="crm-themed-subtle border-b bg-[linear-gradient(120deg,#f8fafc,#eff6ff)] p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><div className="flex flex-wrap items-center gap-2"><h2 className="text-lg font-bold text-slate-950">{fair.name}</h2><StatePill fair={fair} now={now}/></div><p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500"><span className="flex items-center gap-1.5"><CalendarDays className="size-3.5"/>{format(new Date(fair.startDate),"dd/MM")} – {format(new Date(fair.endDate),"dd/MM/yyyy")}</span>{fair.location&&<span className="flex items-center gap-1.5"><MapPin className="size-3.5"/>{fair.location}</span>}</p>{fair.description&&<p className="mt-3 max-w-2xl text-xs leading-5 text-slate-600">{fair.description}</p>}</div><DeclineButton fair={fair} registration={reg} userId={activeUser.id}/></div></div>
+    {reg?.status==="DECLINED"?<div className="p-5"><div className="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm text-rose-800"><b>Đã báo không tham gia</b><p className="mt-1 text-xs">{reg.declineReason}</p></div></div>:<div className="grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:p-5"><div className="space-y-3"><div><h3 className="text-sm font-semibold">Chọn lịch tham gia</h3><p className="mt-1 text-xs text-slate-500">Có thể chọn sáng, chiều hoặc cả ngày. Thay đổi trước khi hội chợ diễn ra.</p></div><FairDays parts={parts} fair={fair} now={now}/></div><aside className="rounded-2xl border bg-slate-50/60 p-4"><div className="flex items-center gap-2"><Sparkles className="size-4 text-violet-600"/><h3 className="text-sm font-semibold">Kết quả của bạn</h3></div><div className="mt-4 grid grid-cols-2 gap-2"><Metric value={parts.reduce((s,p)=>s+sessionCount(p.session),0)} label="ca chọn"/><Metric value={parts.reduce((s,p)=>s+p.leads.length,0)} label="khách"/><Metric value={parts.flatMap(p=>p.leads).filter(l=>l.quality==="HOT").length} label="HOT"/><Metric value={parts.filter(p=>p.marketingLink).length} label="link đã nộp"/></div><p className="mt-4 rounded-xl bg-blue-50 p-3 text-[11px] leading-5 text-blue-700">Sau mỗi ngày tham gia, hãy nhập khách đã tiếp cận và link truyền thông trước 23:59 ngày hôm sau.</p></aside></div>}
+  </section>;
 }
 
 function SalesDay({part,fair,now}:{part:Participation;fair:Fair;now:Date}) {

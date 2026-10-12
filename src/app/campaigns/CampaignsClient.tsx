@@ -365,9 +365,9 @@ export default function CampaignsClient({ users, campaigns, products, nowIso }: 
             const doneCount=normal.filter(p=>p.step==="DONE").length;
             const pendingPenalties=people.reduce((total,person)=>total+person.pendingPenalties,0);
             const complete=normal.length>0&&normal.every(p=>p.step==="DONE");
-            const isNearDeadline = !complete&&timing.state === "DUE_SOON";
-            const isOverdue = !complete&&timing.state === "OVERDUE";
             const cancelled=camp.status==="CANCELLED";
+            const isNearDeadline = !cancelled&&!complete&&timing.state === "DUE_SOON";
+            const isOverdue = !cancelled&&!complete&&timing.state === "OVERDUE";
             const statusLabel=cancelled?"Đã hủy":complete?"Hoàn thành":isOverdue?"Quá hạn":isNearDeadline?"Sắp đến hạn":"Đang thực hiện";
             const statusClass=cancelled?"border-slate-200 bg-slate-100 text-slate-600":complete?"border-emerald-200 bg-emerald-50 text-emerald-700":isOverdue?"border-rose-200 bg-rose-50 text-rose-700":isNearDeadline?"border-amber-200 bg-amber-50 text-amber-700":"border-blue-200 bg-blue-50 text-blue-700";
 
@@ -394,7 +394,7 @@ export default function CampaignsClient({ users, campaigns, products, nowIso }: 
                     </Alert>
                   )}
                   <div className="rounded-xl bg-slate-50 p-3 text-sm"><p className="font-semibold text-slate-700">Yêu cầu chính</p><p className="mt-1 line-clamp-2 text-slate-600">{camp.requirements||"Chưa có yêu cầu."}</p></div>
-                  <div className="flex flex-wrap gap-2"><Button disabled={cancelled} onClick={()=>{setSelectedCampaignId(camp.id);setTab("plan");}} className="bg-blue-600 hover:bg-blue-700">{isAdmin?"Mở kế hoạch & phân công →":"Mở nhiệm vụ của tôi →"}</Button>{isAdmin&&cancelled&&<Button variant="outline" onClick={()=>void handleCampaignStatus(camp.id,"IN_PROGRESS")}>Mở lại</Button>}{isAdmin&&!cancelled&&<Button variant="outline" onClick={()=>void handleCampaignStatus(camp.id,"CANCELLED")}>Hủy chiến dịch</Button>}</div>
+                  <div className="flex flex-wrap gap-2"><Button onClick={()=>{setSelectedCampaignId(camp.id);setTab("plan");}} className="bg-blue-600 hover:bg-blue-700">{cancelled?"Xem kế hoạch →":isAdmin?"Mở kế hoạch & phân công →":"Mở nhiệm vụ của tôi →"}</Button>{isAdmin&&cancelled&&<Button variant="outline" onClick={()=>void handleCampaignStatus(camp.id,"IN_PROGRESS")}>Mở lại</Button>}{isAdmin&&!cancelled&&<Button variant="outline" onClick={()=>void handleCampaignStatus(camp.id,"CANCELLED")}>Hủy chiến dịch</Button>}</div>
                 </CardContent>
               </Card>
             );

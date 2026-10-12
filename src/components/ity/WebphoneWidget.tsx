@@ -31,7 +31,7 @@ export function WebphoneWidget() {
     window.addEventListener("crm:ity-call", callLead);
     return () => window.removeEventListener("crm:ity-call", callLead);
   }, [dialPhone]);
-  return <div className="fixed bottom-4 right-4 z-[60] max-w-[calc(100vw-2rem)]">
+  return <div className="fixed bottom-20 right-4 z-[60] max-w-[calc(100vw-2rem)]">
     {visible && <section aria-label="Điện thoại ITY" className="mb-3 max-h-[calc(100dvh-6rem)] w-80 max-w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-xl">
       <div className="flex items-center justify-between"><div><h2 className="text-sm font-semibold text-slate-900">Điện thoại ITY</h2><p className="mt-1 text-[11px] text-slate-500">{phone.extension ? `Máy lẻ ${phone.extension}` : "Nghe/gọi trực tiếp trên CRM"}</p></div><button type="button" aria-label="Đóng gọi điện" onClick={() => setOpen(false)} className="flex size-8 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50"><X size={16} /></button></div>
       <div className="mt-3 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">

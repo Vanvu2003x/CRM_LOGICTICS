@@ -18,7 +18,9 @@ export async function checkIn(userId:string,location?:GeoInput) {
   await db.attendance.update({where:{id:open.id},data:{checkOut:automaticCheckoutAt(open.checkIn),closeType:"AUTO_END_OF_DAY",closeNote:"Tự kết thúc lúc 17:30 do nhân viên chưa chấm công ra."}});
  }
  await db.attendance.create({data:{userId,date:new Date(),checkIn:new Date(),...(geo?{checkInLatitude:geo.latitude,checkInLongitude:geo.longitude,checkInAccuracy:geo.accuracy}:{})}});
- revalidatePath("/attendance");return {success:true};
+ revalidatePath("/attendance");
+ revalidatePath("/social-kpi");
+ return {success:true};
  }catch(error){return {success:false,error:error instanceof Error?error.message:"Không chấm công được."};}
 }
 export async function checkOut(id:string,location?:GeoInput) {

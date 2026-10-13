@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import type { UA } from "jssip";
 import type { RTCSessionEvent } from "jssip/lib/UA";
-import type { RTCSession, PeerConnectionEvent, EndEvent } from "jssip/lib/RTCSession";
+import type { RTCSession, EndEvent } from "jssip/lib/RTCSession";
 import { friendlyWebphoneMessage, loadWebphoneConfig, shouldRetryWebphoneError } from "@/lib/webphone-response";
 import { callFailureMessage } from "@/lib/ity-call-failure";
 import { reconnectDelay, shouldReconnect } from "@/lib/webphone-reconnect";
 import { ityDialPhone } from "@/lib/ity-call-log";
+import { bindRemoteAudio } from "@/lib/webphone-media";
 
 export function useItyWebphone() {
   const ua = useRef<UA | null>(null), session = useRef<RTCSession | null>(null);
@@ -84,23 +85,13 @@ export function useItyWebphone() {
           audio.current.muted = false;
           audio.current.volume = 1;
           audio.current.setAttribute("playsinline", "true");
-          audio.current.srcObject = stream;
-          audio.current.load();
+          if (audio.current.srcObject !== stream) audio.current.srcObject = stream;
           void audio.current.play().catch(() => setMessage("Bấm Nghe âm thanh để bật tiếng cuộc gọi."));
         };
-        current.on("peerconnection", ({ peerconnection }: PeerConnectionEvent) => {
-          peerconnection.addEventListener("track", (track) => {
-            playRemoteAudio(track.streams[0] || new MediaStream([track.track]));
-          });
-          peerconnection.addEventListener("addstream", (streamEvent) => {
-            const stream = (streamEvent as Event & { stream?: MediaStream }).stream;
-            if (stream) playRemoteAudio(stream);
-          });
-        });
+        const catchUpRemoteAudio = bindRemoteAudio(current, playRemoteAudio);
         current.on("confirmed", () => {
           setCallState("active");
-          const streams = current.connection?.getRemoteStreams?.() || [];
-          if (streams[0]) playRemoteAudio(streams[0]);
+          catchUpRemoteAudio();
           setMessage("Đang đàm thoại qua tổng đài ITY.");
         });
         current.on("progress", () => setMessage("Tổng đài ITY đã tiếp nhận, đang đổ chuông…"));

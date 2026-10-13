@@ -73,14 +73,30 @@ export function useItyWebphone() {
         const current = event.session; session.current = current;
         setRemote(current.remote_identity.uri.user || "Không rõ số"); setMuted(false);
         setCallState(event.originator === "remote" ? "incoming" : "dialing");
+        const playRemoteAudio = (stream: MediaStream) => {
+          if (!audio.current) audio.current = new Audio();
+          audio.current.autoplay = true;
+          audio.current.muted = false;
+          audio.current.volume = 1;
+          audio.current.setAttribute("playsinline", "true");
+          audio.current.srcObject = stream;
+          void audio.current.play().catch(() => setMessage("Bấm Nghe âm thanh để bật tiếng cuộc gọi."));
+        };
         current.on("peerconnection", ({ peerconnection }: PeerConnectionEvent) => {
           peerconnection.addEventListener("track", (track) => {
-            if (!audio.current) audio.current = new Audio();
-            audio.current.srcObject = track.streams[0] || new MediaStream([track.track]);
-            void audio.current.play().catch(() => setMessage("Bấm Nghe âm thanh để bật tiếng cuộc gọi."));
+            playRemoteAudio(track.streams[0] || new MediaStream([track.track]));
+          });
+          peerconnection.addEventListener("addstream", (streamEvent) => {
+            const stream = (streamEvent as Event & { stream?: MediaStream }).stream;
+            if (stream) playRemoteAudio(stream);
           });
         });
-        current.on("confirmed", () => { setCallState("active"); setMessage("Đang đàm thoại qua tổng đài ITY."); });
+        current.on("confirmed", () => {
+          setCallState("active");
+          const streams = current.connection?.getRemoteStreams?.() || [];
+          if (streams[0]) playRemoteAudio(streams[0]);
+          setMessage("Đang đàm thoại qua tổng đài ITY.");
+        });
         current.on("progress", () => setMessage("Tổng đài ITY đã tiếp nhận, đang đổ chuông…"));
         const finish = (failed: boolean, event?: EndEvent) => {
           session.current = null; setCallState("idle"); setMuted(false);

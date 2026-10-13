@@ -46,7 +46,7 @@ export function useItyWebphone() {
   function disconnect() {
     manuallyStopped.current = true; clearTimers(); connecting.current = false;
     ua.current?.stop(); ua.current = null; session.current = null;
-    if (audio.current) { audio.current.pause(); audio.current.srcObject = null; }
+    if (audio.current) { audio.current.pause(); audio.current.srcObject = null; audio.current.remove(); audio.current = null; }
     setState("offline"); setCallState("idle"); setMuted(false); setMessage("Đã ngắt điện thoại ITY.");
   }
 
@@ -74,12 +74,18 @@ export function useItyWebphone() {
         setRemote(current.remote_identity.uri.user || "Không rõ số"); setMuted(false);
         setCallState(event.originator === "remote" ? "incoming" : "dialing");
         const playRemoteAudio = (stream: MediaStream) => {
-          if (!audio.current) audio.current = new Audio();
+          if (!audio.current) {
+            audio.current = document.createElement("audio");
+            audio.current.setAttribute("aria-hidden", "true");
+            audio.current.style.display = "none";
+            document.body.appendChild(audio.current);
+          }
           audio.current.autoplay = true;
           audio.current.muted = false;
           audio.current.volume = 1;
           audio.current.setAttribute("playsinline", "true");
           audio.current.srcObject = stream;
+          audio.current.load();
           void audio.current.play().catch(() => setMessage("Bấm Nghe âm thanh để bật tiếng cuộc gọi."));
         };
         current.on("peerconnection", ({ peerconnection }: PeerConnectionEvent) => {
@@ -100,7 +106,7 @@ export function useItyWebphone() {
         current.on("progress", () => setMessage("Tổng đài ITY đã tiếp nhận, đang đổ chuông…"));
         const finish = (failed: boolean, event?: EndEvent) => {
           session.current = null; setCallState("idle"); setMuted(false);
-          if (audio.current) { audio.current.pause(); audio.current.srcObject = null; }
+          if (audio.current) { audio.current.pause(); audio.current.srcObject = null; audio.current.remove(); audio.current = null; }
           setMessage(failed ? callFailureMessage(event) : "Cuộc gọi đã kết thúc. Lịch sử đầy đủ sẽ được cập nhật khi ITY gửi webhook.");
         };
         current.on("ended", () => finish(false)); current.on("failed", (event: EndEvent) => finish(true, event));
@@ -130,7 +136,7 @@ export function useItyWebphone() {
       if (registrationTimer.current) clearTimeout(registrationTimer.current);
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
       window.removeEventListener("online", reconnect); document.removeEventListener("visibilitychange", visible);
-      ua.current?.stop(); ua.current = null; if (audio.current) audio.current.srcObject = null;
+      ua.current?.stop(); ua.current = null; if (audio.current) { audio.current.srcObject = null; audio.current.remove(); audio.current = null; }
     };
   }, []);
 

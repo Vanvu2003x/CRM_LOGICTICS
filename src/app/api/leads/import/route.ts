@@ -25,7 +25,7 @@ export async function POST(request:Request) {
    const created=await tx.leadImportBatch.create({data:{filename,source:"EXCEL",totalRows:parsed.valid.length,importedRows:fresh.length,duplicateRows:parsed.valid.length-fresh.length,createdById:user.id}});
    for(const row of fresh)await tx.lead.create({data:{...row,company:row.company||null,companyFoundedAt:row.companyFoundedAt?new Date(`${row.companyFoundedAt}T12:00:00+07:00`):null,taxId:row.taxId||null,address:row.address||null,industry:row.industry||null,needs:row.needs||null,source:row.source||"EXCEL",salesId:null,interestState:"UNKNOWN",callOutcome:"UNKNOWN",isInterested:false,status:"NEW",importBatchId:created.id}});
    return created;
-  });
+  },{maxWait:10000,timeout:120000});
   return NextResponse.json({success:true,batchId:batch.id,imported:fresh.length,duplicates:parsed.valid.length-fresh.length});
  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Không import được dữ liệu."},{status:400});}
 }

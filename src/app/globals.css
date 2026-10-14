@@ -43,6 +43,7 @@
 .crm-shell main .crm-leads-table td:nth-child(4) { white-space: nowrap; }
 .crm-shell main .crm-leads-table th:last-child,
 .crm-shell main .crm-leads-table td:last-child { position: sticky; right: 0; z-index: 1; background: #fff; box-shadow: -1px 0 #e2e8f0; }
+.crm-shell main .crm-leads-table thead th:last-child { background: #0f172a; color: #fff; }
 .crm-shell main .crm-leads-table td:last-child button { padding: 6px 4px; min-height: 32px; white-space: nowrap; }
 .crm-shell[data-theme="dark"] main .crm-leads-table th:last-child,
 .crm-shell[data-theme="dark"] main .crm-leads-table td:last-child { background: #101c2e; box-shadow: -1px 0 #26364f; }

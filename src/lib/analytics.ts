@@ -153,6 +153,8 @@ export async function analytics(user: PublicUser, query: ReportQuery = {}) {
       calls: calls.filter((call) => inDay(call.startedAt)).length,
       leads: createdLeads.filter((lead) => inDay(lead.createdAt)).length,
       completed: completed.filter((order) => inDay(order.completedAt)).length,
+      fairLeads: fairs.filter((fair) => inDay(fair.day)).reduce((sum, fair) => sum + fair.leads.length, 0),
+      socialPosts: posts.filter((post) => inDay(post.createdAt)).length,
     });
   }
 

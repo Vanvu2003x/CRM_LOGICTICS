@@ -2,13 +2,14 @@ import { db } from "./db";
 import { assertOwner, manager, permittedUserIds, publicUserSelect, type PublicUser } from "./auth";
 import { readJson, type SavedSteps } from "./business-rules";
 import type { LeadStatus } from "./demo-crm";
+import { familiarPhone } from "./ity-call-log";
 
 export async function scopedData(user: PublicUser) {
   const ids = await permittedUserIds(user);
   const scope = ids ? { salesId: { in: ids } } : {};
   const scopedLeadIds = ids ? (await db.lead.findMany({ where: scope, select: { id: true } })).map((lead) => lead.id) : [];
   const callScope = ids ? { OR: [{ salesId: { in: ids } }, { leadId: { in: scopedLeadIds } }] } : {};
-  const [leads, orders, agents, activities, calls, users, dataRequests, importBatches, leadPoolCount] = await Promise.all([
+  const [leads, orders, agents, activities, calls, users, dataRequests, importBatches, leadPoolCount, callStats] = await Promise.all([
     db.lead.findMany({ where: scope, include: { sales: { select: publicUserSelect } }, orderBy: { updatedAt: "desc" } }),
     db.order.findMany({ where: scope, include: { lead: true, sales: { select: publicUserSelect }, files: true }, orderBy: { updatedAt: "desc" } }),
     db.agent.findMany({ orderBy: { name: "asc" } }),
@@ -18,14 +19,17 @@ export async function scopedData(user: PublicUser) {
     db.leadDataRequest.findMany({where:ids?{userId:{in:ids}}:{},include:{user:{select:publicUserSelect}},orderBy:{requestedAt:"desc"},take:50}),
     manager(user)?db.leadImportBatch.findMany({orderBy:{createdAt:"desc"},take:30}):Promise.resolve([]),
     manager(user)?db.lead.count({where:{salesId:null,status:"NEW"}}):Promise.resolve(0),
+    db.callLog.groupBy({ by: ["phone"], where: callScope, _count: { _all: true }, _sum: { billsec: true } }),
   ]);
+  const callStatsByPhone = new Map(callStats.map((item) => [familiarPhone(item.phone.replace(/[\s().-]/g, "")), { count: item._count._all, duration: item._sum.billsec || 0 }]));
   const reminders=await db.reminder.findMany({where:{status:"OPEN",...(ids?{userId:{in:ids}}:{})},orderBy:{dueAt:"asc"}});
   const statuses: Record<string, LeadStatus> = { NEW: "MỚI", IN_PROGRESS: "ĐANG_CHĂM_SÓC", CONVERTED: "CHUYỂN_ĐƠN", FAILED: "FAIL" };
   return {
     leads: leads.map((lead) => ({
+      ...(() => { const stat = callStatsByPhone.get(familiarPhone(lead.phone.replace(/[\s().-]/g, ""))); return { callCount: stat?.count ?? lead.callCount, callDurationSeconds: stat?.duration ?? lead.callDurationSeconds }; })(),
       id: lead.id, name: lead.name, phone: lead.phone, email: lead.email || "", company: lead.company || "", companyFoundedAt: lead.companyFoundedAt?.toISOString().slice(0, 10) || null, taxId: lead.taxId || "", address: lead.address || "", industry: lead.industry || "", source: lead.source || "",
       needs: lead.needs || "", isInterested: lead.interestState === "YES", interestState: lead.interestState,
-      callDurationSeconds: lead.callDurationSeconds, callCount: lead.callCount, status: statuses[lead.status] || "MỚI",
+      status: statuses[lead.status] || "MỚI",
       lastCall: (lead.lastContactAt || lead.createdAt).toISOString().slice(0, 10), sales: lead.sales?.name || "Chưa giao",
       salesId: lead.salesId, createdAt: lead.createdAt.toISOString(), followUpAt: lead.followUpAt?.toISOString() || null,
       history: readJson<unknown[]>(lead.contactHistory, []), originRef: lead.originRef, callOutcome: lead.callOutcome,

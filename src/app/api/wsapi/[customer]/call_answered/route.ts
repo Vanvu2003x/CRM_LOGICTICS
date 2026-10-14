@@ -37,6 +37,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ cus
       let lead = linkedOrder?.leadId
         ? await tx.lead.findUnique({ where: { id: linkedOrder.leadId } })
         : sales ? await tx.lead.findFirst({ where: { salesId: sales.id, phone: call.phone } }) : null;
+      if (!lead) lead = await tx.lead.findFirst({ where: { phone: call.phone }, orderBy: { updatedAt: "desc" } });
       const callOutcome = call.callOutcome;
       if (!lead) lead = await tx.lead.create({ data: { name: call.customerName || call.phone, phone: call.phone, company: call.company, source: "ITY", salesId: sales?.id, interestState: call.demand, callOutcome, isInterested: call.demand === "YES", needs: call.needs } });
       const previousNoAnswerCalls = lead ? await tx.callLog.count({ where: { leadId: lead.id, status: "NO ANSWER" } }) : 0;

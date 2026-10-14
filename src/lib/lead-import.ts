@@ -1,22 +1,19 @@
-export type LeadImportRow = { name:string;phone:string;company:string;companyFoundedAt:string;taxId:string;address:string;industry:string;needs:string;source:string };
+import { isLeadPhone, normalizeLeadPhone } from "./phone";
+
+export type LeadImportRow = { name:string;phone:string;email:string;company:string;companyFoundedAt:string;taxId:string;address:string;industry:string;needs:string };
 export type LeadImportError = { row:number;name:string;phone:string;reason:string };
 
 const clean = (value:unknown) => String(value ?? "").replace(/\s+/g," ").trim();
 const key = (value:unknown) => clean(value).normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/đ/gi,"d").toLowerCase().replace(/[^a-z0-9]/g,"");
 const aliases:Record<keyof LeadImportRow,string[]> = {
   name:["tennguoilienhe","tenkhach","hoten","name","contactname"],
-  phone:["sodienthoai","dienthoai","sdt","phone","mobile"],
+  phone:["sodienthoai","dienthoai","sdt","phone","mobile"], email:["email","emailkhachhang","thuđientu","thudientu","mail"],
   company:["tencongty","congty","company"], companyFoundedAt:["ngaythanhlap","ngaythanhlapcongty","ngaythanhlapdn","companyfoundedat","foundedat"], taxId:["masothue","mst","taxid"],
   address:["diachi","diachicongty","address"], industry:["nganhnghe","industry"],
-  needs:["nhucau","noidungtraodoi","nhucaunoidungtraodoi","needs","note"], source:["nguonkhach","nguon","source"],
+  needs:["nhucau","noidungtraodoi","nhucaunoidungtraodoi","needs","note"],
 };
 
-export function normalizeVietnamPhone(value:unknown) {
-  let digits=clean(value).replace(/\D/g,"");
-  if(digits.startsWith("84")&&digits.length>=11)digits="0"+digits.slice(2);
-  if(digits.length===9&&!digits.startsWith("0"))digits="0"+digits;
-  return digits;
-}
+export const normalizeVietnamPhone = normalizeLeadPhone;
 
 function normalizeCompanyFoundedAt(value:unknown) {
   const raw=clean(value);
@@ -45,9 +42,9 @@ export function parseLeadImportMatrix(matrix:unknown[][]) {
     if(!row.some(value=>clean(value)))return;
     const get=(field:keyof LeadImportRow)=>indexes[field]>=0?clean(row[indexes[field]]):"";
     const name=get("name"),phone=normalizeVietnamPhone(indexes.phone>=0?row[indexes.phone]:""),companyFoundedAt=normalizeCompanyFoundedAt(indexes.companyFoundedAt>=0?row[indexes.companyFoundedAt]:"");
-    const problem=!name?"Thiếu tên người liên hệ":!/^0\d{9,10}$/.test(phone)?"Thiếu hoặc sai số điện thoại":phones.has(phone)?"Trùng số điện thoại trong file":get("companyFoundedAt")&&!companyFoundedAt?"Ngày thành lập không hợp lệ":"";
+    const problem=!name?"Thiếu tên người liên hệ":!isLeadPhone(phone)?"Thiếu hoặc sai số điện thoại":phones.has(phone)?"Trùng số điện thoại trong file":get("companyFoundedAt")&&!companyFoundedAt?"Ngày thành lập không hợp lệ":"";
     if(problem){errors.push({row:index+2,name,phone,reason:problem});return;}
-    phones.add(phone);valid.push({name,phone,company:get("company"),companyFoundedAt,taxId:get("taxId"),address:get("address"),industry:get("industry"),needs:get("needs"),source:get("source")||"EXCEL"});
+    phones.add(phone);valid.push({name,phone,email:get("email"),company:get("company"),companyFoundedAt,taxId:get("taxId"),address:get("address"),industry:get("industry"),needs:get("needs")});
   });
   return {valid,errors};
 }

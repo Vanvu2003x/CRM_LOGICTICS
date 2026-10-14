@@ -20,9 +20,11 @@ export async function PATCH(request:Request){
   const user=await requireUser();
   if(!manager(user))return NextResponse.json({error:"Không có quyền xử lý yêu cầu."},{status:403});
   if(!requestHasAllowedOrigin(request))return NextResponse.json({error:"Nguồn gửi yêu cầu không được phép."},{status:403});
-  const body=await request.json() as {id?:unknown};
+  const body=await request.json() as {id?:unknown;status?:unknown};
   if(typeof body.id!=="string")throw new Error("Yêu cầu không hợp lệ.");
-  await db.leadDataRequest.update({where:{id:body.id},data:{status:"RESOLVED",resolvedAt:new Date(),resolvedById:user.id}});
-  return NextResponse.json({success:true});
+  const status=body.status==="REJECTED"?"REJECTED":"RESOLVED";
+  const updatedRequest=await db.leadDataRequest.update({where:{id:body.id},data:{status,resolvedAt:new Date(),resolvedById:user.id},include:{user:{select:{name:true}}}});
+  await db.activity.create({data:{userId:user.id,text:`${user.name} ${status==="REJECTED"?"từ chối":"xử lý"} yêu cầu cấp data của ${updatedRequest.user.name}`,href:"/leads"}});
+  return NextResponse.json({success:true,status});
  }catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Không xử lý được yêu cầu."},{status:400});}
 }

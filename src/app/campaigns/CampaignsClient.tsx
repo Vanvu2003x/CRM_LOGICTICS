@@ -219,6 +219,14 @@ export default function CampaignsClient({ users, campaigns, products, nowIso }: 
         )}
       </div>
 
+      {tab!=="plan"&&<div className="mb-4 flex flex-col gap-2 rounded-xl border bg-white p-3 sm:flex-row sm:flex-wrap lg:justify-end">
+          <Input aria-label="Tìm chiến dịch hoặc nhiệm vụ" placeholder="Tìm chiến dịch, nội dung..." value={query} onChange={e=>{setQuery(e.target.value);setPage(1);}} className="min-w-0 sm:max-w-xs"/>
+          {isAdmin&&<select aria-label="Lọc nhân viên" className="h-10 rounded-lg border px-3 text-sm" value={owner} onChange={e=>{setOwner(e.target.value);setPage(1);}}><option value="ALL">Tất cả nhân viên</option>{users.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select>}
+          {tab==="campaigns"?<select aria-label="Lọc trạng thái chiến dịch" className="h-10 rounded-lg border px-3 text-sm" value={period} onChange={e=>{setPeriod(e.target.value);setPage(1);}}><option value="ALL">Tất cả trạng thái</option><option value="ACTIVE">Đang thực hiện</option><option value="DUE_SOON">Sắp đến hạn</option><option value="OVERDUE">Quá hạn</option><option value="DONE">Hoàn thành</option><option value="CANCELLED">Đã hủy</option></select>:<>
+          <select aria-label="Lọc loại nhiệm vụ" className="h-10 rounded-lg border px-3 text-sm" value={kind} onChange={e=>{setKind(e.target.value);setPage(1);}}><option value="ALL">Nhiệm vụ & bài phạt</option><option value="NORMAL">Nhiệm vụ chính</option><option value="PENALTY">Bài phạt</option></select>
+          <select aria-label="Lọc bước duyệt" className="h-10 rounded-lg border px-3 text-sm" value={step} onChange={e=>{setStep(e.target.value);setPage(1);}}><option value="ALL">Tất cả bước</option>{STEPS.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select></>}
+        </div>}
+
       <section aria-label="Tổng quan công việc truyền thông" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[{label:"Chiến dịch đang theo dõi",value:campaignOverview.active,tab:"campaigns",tone:"border-blue-200 bg-blue-50 text-blue-800"},{label:"Nội dung cần nộp",value:campaignOverview.submit,tab:"tasks",tone:"border-amber-200 bg-amber-50 text-amber-800"},{label:"Đang chờ duyệt",value:campaignOverview.review,tab:"tasks",tone:"border-violet-200 bg-violet-50 text-violet-800"},{label:"Đã quá hạn",value:campaignOverview.overdue,tab:"tasks",tone:"border-rose-200 bg-rose-50 text-rose-800"}].map(card=><button key={card.label} type="button" onClick={()=>{setTab(card.tab);setPage(1);}} className={`rounded-xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${card.tone}`}><p className="text-xs font-medium opacity-80">{card.label}</p><p className="mt-1 text-2xl font-bold">{card.value}</p><p className="mt-1 text-[11px] opacity-70">Bấm để xem chi tiết →</p></button>)}
       </section>
@@ -229,15 +237,6 @@ export default function CampaignsClient({ users, campaigns, products, nowIso }: 
           <TabsTrigger value="plan">Kế hoạch nội dung <span className="ml-1 rounded-full bg-slate-100 px-1.5 text-[10px]">{permittedProducts.length}</span></TabsTrigger>
           <TabsTrigger value="tasks">Việc cần duyệt <span className="ml-1 rounded-full bg-slate-100 px-1.5 text-[10px]">{campaignOverview.submit+campaignOverview.review}</span></TabsTrigger>
         </TabsList>
-
-        {tab!=="plan"&&<div className="mb-4 flex flex-col gap-2 rounded-xl border bg-white p-3 sm:flex-row sm:flex-wrap">
-          <Input aria-label="Tìm chiến dịch hoặc nhiệm vụ" placeholder="Tìm chiến dịch, nội dung..." value={query} onChange={e=>{setQuery(e.target.value);setPage(1);}} className="min-w-0 sm:max-w-xs"/>
-          {isAdmin&&<select aria-label="Lọc nhân viên" className="h-10 rounded-lg border px-3 text-sm" value={owner} onChange={e=>{setOwner(e.target.value);setPage(1);}}><option value="ALL">Tất cả nhân viên</option>{users.map(u=><option key={u.id} value={u.id}>{u.name}</option>)}</select>}
-          {tab==="campaigns"?<select aria-label="Lọc trạng thái chiến dịch" className="h-10 rounded-lg border px-3 text-sm" value={period} onChange={e=>{setPeriod(e.target.value);setPage(1);}}><option value="ALL">Tất cả trạng thái</option><option value="ACTIVE">Đang thực hiện</option><option value="DUE_SOON">Sắp đến hạn</option><option value="OVERDUE">Quá hạn</option><option value="DONE">Hoàn thành</option><option value="CANCELLED">Đã hủy</option></select>:<>
-          <select aria-label="Lọc loại nhiệm vụ" className="h-10 rounded-lg border px-3 text-sm" value={kind} onChange={e=>{setKind(e.target.value);setPage(1);}}><option value="ALL">Nhiệm vụ & bài phạt</option><option value="NORMAL">Nhiệm vụ chính</option><option value="PENALTY">Bài phạt</option></select>
-          <select aria-label="Lọc bước duyệt" className="h-10 rounded-lg border px-3 text-sm" value={step} onChange={e=>{setStep(e.target.value);setPage(1);}}><option value="ALL">Tất cả bước</option>{STEPS.map(s=><option key={s.id} value={s.id}>{s.label}</option>)}</select></>}
-        </div>}
-
         <TabsContent value="plan">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4"><div><p className="text-sm font-semibold text-slate-900">{campaigns.find(c=>c.id===selectedCampaignId)?.name||"Tất cả kế hoạch nội dung"}</p><p className="mt-1 text-sm text-slate-500">{isAdmin ? "Phân công, theo dõi deadline và duyệt sản phẩm trong cùng một bảng." : "Theo dõi deadline và trạng thái các nhiệm vụ của bạn."}</p></div>{isAdmin&&<AssignmentForm key={selectedCampaignId||"all"} campaigns={campaigns} users={users} selectedCampaignId={selectedCampaignId}/>}</div>
           <CampaignPlanBoard key={selectedCampaignId||"all"} products={permittedProducts} campaigns={campaigns} users={users} isAdmin={isAdmin} nowIso={nowIso} loading={loading} onAction={handleAction} selectedCampaignId={selectedCampaignId} />

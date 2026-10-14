@@ -252,7 +252,7 @@ function OrderDetailContent({ params }: { params: Promise<{ orderId: string }> }
                   <div className="flex items-center justify-between text-slate-600 text-[11px]">
                     <span>Sales: <strong>{log.salesName}</strong> (Ext {log.extension})</span>
                     <span className="font-mono font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded">
-                      {Math.floor(log.billsec / 60)}m {log.billsec % 60}s
+                      {log.billsec}s
                     </span>
                   </div>
 

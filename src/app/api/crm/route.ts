@@ -7,6 +7,7 @@ import { nextStage, readJson, type SavedSteps, type StepFields } from "@/lib/bus
 import { validateStep } from "@/lib/step-validation";
 import {runReminders} from "@/lib/reminders";
 import { requestHasAllowedOrigin } from "@/lib/request-origin";
+import { isLeadPhone, normalizeLeadPhone } from "@/lib/phone";
 
 function text(value: unknown, max = 2000) { if (typeof value !== "string" || value.length > max) throw new Error("Thông tin không hợp lệ."); return value.trim(); }
 function fields(value: unknown): StepFields {
@@ -34,7 +35,18 @@ export async function POST(request: Request) {
     const action = text(body.action, 50);
     const id = typeof body.id === "string" ? body.id : "";
     const data = fields(body.data || {});
-    if (action === "lead.create" || action === "lead.update") {
+    if (action === "lead.delete") {
+      await ownedLead(user, id);
+      const existingOrder = await db.order.findUnique({ where: { leadId: id }, select: { code: true } });
+      if (existingOrder) throw new Error("Khách đã có đơn hàng nên không thể xóa hồ sơ.");
+      await db.$transaction([
+        db.callLog.updateMany({ where: { leadId: id }, data: { leadId: null } }),
+        db.socialPost.updateMany({ where: { leadId: id }, data: { leadId: null } }),
+        db.tradeFairLead.deleteMany({ where: { crmLeadId: id } }),
+        db.lead.delete({ where: { id } }),
+      ]);
+      await activity(user, "xóa khách tiềm năng", "/leads");
+    } else if (action === "lead.create" || action === "lead.update") {
       const lead = action === "lead.update" ? await ownedLead(user, id) : null;
       let salesId: string | null = lead ? lead.salesId : user.id;
       if (data.salesId === "" && manager(user)) salesId = null;
@@ -42,7 +54,8 @@ export async function POST(request: Request) {
       else if (typeof data.sales === "string" && manager(user)) { const sales = await db.user.findFirst({ where: { name: data.sales } }); if (sales) { await assertOwner(user, sales.id); salesId = sales.id; } }
       const statusMap: Record<string, string> = { "MỚI": "NEW", "ĐANG_CHĂM_SÓC": "IN_PROGRESS", "CHUYỂN_ĐƠN": "CONVERTED", FAIL: "FAILED" };
       const updates = {
-        name: typeof data.name === "string" ? text(data.name, 200) : lead?.name || "", phone: typeof data.phone === "string" ? text(data.phone, 30) : lead?.phone || "",
+        name: typeof data.name === "string" ? text(data.name, 200) : lead?.name || "", phone: normalizeLeadPhone(typeof data.phone === "string" ? text(data.phone, 50) : lead?.phone || ""),
+        email: typeof data.email === "string" ? text(data.email, 200) : lead?.email || null,
         company: typeof data.company === "string" ? text(data.company, 300) : lead?.company,
         companyFoundedAt: typeof data.companyFoundedAt === "string" && data.companyFoundedAt ? new Date(data.companyFoundedAt + "T12:00:00+07:00") : lead?.companyFoundedAt,
         taxId: typeof data.taxId === "string" ? text(data.taxId, 50) : lead?.taxId,
@@ -58,7 +71,8 @@ export async function POST(request: Request) {
         lastContactAt: typeof data.lastCall === "string" ? new Date(data.lastCall + "T12:00:00+07:00") : lead?.lastContactAt,
         followUpAt: typeof data.followUpAt === "string" && data.followUpAt ? new Date(data.followUpAt + "T09:00:00+07:00") : lead?.followUpAt,
       };
-      if (!updates.name || !/^\+?[\d\s().-]{7,25}$/.test(updates.phone)) throw new Error("Nhập tên và số điện thoại hợp lệ.");
+      if (!updates.name || !isLeadPhone(updates.phone)) throw new Error("Nhập tên và số điện thoại hợp lệ.");
+      if (updates.email && !/^\S+@\S+\.\S+$/.test(updates.email)) throw new Error("Email không hợp lệ.");
       if(updates.status==="CONVERTED" && (!lead || !await db.order.findUnique({where:{leadId:id}})))throw new Error("Dùng nút Tạo đơn để chuyển khách thành đơn hàng.");
       for(const date of [updates.lastContactAt,updates.firstContactAt,updates.followUpAt,updates.companyFoundedAt])if(date&&!Number.isFinite(date.getTime()))throw new Error("Ngày không hợp lệ.");
       if (lead) {

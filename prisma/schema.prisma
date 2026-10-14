@@ -73,6 +73,7 @@ model Lead {
   id                  String           @id @default(cuid())
   name                String
   phone               String
+  email               String?
   company             String?
   companyFoundedAt    DateTime?
   taxId               String?

@@ -4,6 +4,7 @@ export type DemoLead = {
   id: string;
   name: string;
   phone: string;
+  email?: string | null;
   company: string;
   companyFoundedAt?: string | null;
   taxId?: string;

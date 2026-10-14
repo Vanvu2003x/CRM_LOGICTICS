@@ -87,6 +87,17 @@ export default function AttendanceClient({ activeUser, users, initialAttendances
       <header>
         <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Chấm Công <span className="font-semibold text-slate-400">(Attendance)</span></h1>
         <p className="mt-1 text-sm text-slate-500">{activeUser.role === "ADMIN" ? "Quản lý chấm công và theo dõi hoạt động làm việc trong ngày." : "Chấm công để bắt đầu ghi nhận KPI làm việc trong ngày."}</p>
+      <section aria-label="Bộ lọc chấm công" className="mt-3 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm lg:ml-auto lg:max-w-5xl lg:flex-row lg:flex-wrap lg:items-center">
+        <label className="relative min-w-0 flex-1 lg:max-w-sm"><span className="sr-only">Tìm nhân viên</span><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm tên hoặc máy lẻ..." className="h-10 pl-9" /></label>
+        <select aria-label="Lọc bộ phận" value={role} onChange={(event) => setRole(event.target.value)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"><option value="ALL">Tất cả bộ phận</option><option value="ADMIN">Quản trị</option><option value="MANAGER">Quản lý</option><option value="SALES">Sales</option></select>
+        <select aria-label="Lọc trạng thái" value={status} onChange={(event) => setStatus(event.target.value)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"><option value="ALL">Tất cả trạng thái</option><option value="MISSING">Chưa chấm công</option><option value="WORKING">Đang làm việc</option><option value="DONE">Đã hoàn thành</option></select>
+        <label className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-600"><CalendarDays className="size-4" /><span className="sr-only">Chọn ngày</span><input type="date" max={today} value={selectedDate} onChange={(event) => router.push(`/attendance?date=${event.target.value}`)} className="min-w-0 bg-transparent outline-none" /></label>
+        <Button type="button" variant="outline" onClick={() => router.refresh()} className="h-10"><RefreshCw className="size-4" />Làm mới</Button>
+        <div className="flex rounded-xl bg-slate-100 p-1 lg:ml-auto">
+          <button type="button" aria-pressed={view === "LIST"} onClick={() => setView("LIST")} className={`flex h-9 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition ${view === "LIST" ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-900"}`}><ListFilter className="size-4" />Danh sách</button>
+          <button type="button" aria-pressed={view === "STATS"} onClick={() => setView("STATS")} className={`flex h-9 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition ${view === "STATS" ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-900"}`}><BarChart3 className="size-4" />Thống kê</button>
+        </div>
+      </section>
       </header>
 
       <section className="crm-themed-hero relative overflow-hidden rounded-2xl border border-blue-200/70 bg-gradient-to-r from-blue-50 via-sky-50 to-indigo-50 p-4 shadow-sm sm:p-5">
@@ -105,18 +116,6 @@ export default function AttendanceClient({ activeUser, users, initialAttendances
             <Metric icon={Users} value={summary.working} label="Đang làm việc" detail="Hôm nay" tone="amber" />
             <Metric icon={BarChart3} value={`${summary.rate}%`} label="Tỷ lệ chấm công" detail="Theo ngày đã chọn" tone="violet" />
           </div>
-        </div>
-      </section>
-
-      <section aria-label="Bộ lọc chấm công" className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm lg:flex-row lg:items-center">
-        <label className="relative min-w-0 flex-1 lg:max-w-sm"><span className="sr-only">Tìm nhân viên</span><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm tên hoặc máy lẻ..." className="h-10 pl-9" /></label>
-        <select aria-label="Lọc bộ phận" value={role} onChange={(event) => setRole(event.target.value)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"><option value="ALL">Tất cả bộ phận</option><option value="ADMIN">Quản trị</option><option value="MANAGER">Quản lý</option><option value="SALES">Sales</option></select>
-        <select aria-label="Lọc trạng thái" value={status} onChange={(event) => setStatus(event.target.value)} className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"><option value="ALL">Tất cả trạng thái</option><option value="MISSING">Chưa chấm công</option><option value="WORKING">Đang làm việc</option><option value="DONE">Đã hoàn thành</option></select>
-        <label className="flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-600"><CalendarDays className="size-4" /><span className="sr-only">Chọn ngày</span><input type="date" max={today} value={selectedDate} onChange={(event) => router.push(`/attendance?date=${event.target.value}`)} className="min-w-0 bg-transparent outline-none" /></label>
-        <Button type="button" variant="outline" onClick={() => router.refresh()} className="h-10"><RefreshCw className="size-4" />Làm mới</Button>
-        <div className="flex rounded-xl bg-slate-100 p-1 lg:ml-auto">
-          <button type="button" aria-pressed={view === "LIST"} onClick={() => setView("LIST")} className={`flex h-9 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition ${view === "LIST" ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-900"}`}><ListFilter className="size-4" />Danh sách</button>
-          <button type="button" aria-pressed={view === "STATS"} onClick={() => setView("STATS")} className={`flex h-9 flex-1 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition ${view === "STATS" ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-900"}`}><BarChart3 className="size-4" />Thống kê</button>
         </div>
       </section>
 

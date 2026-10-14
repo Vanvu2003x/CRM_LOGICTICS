@@ -6,12 +6,14 @@ import type { LeadStatus } from "./demo-crm";
 export async function scopedData(user: PublicUser) {
   const ids = await permittedUserIds(user);
   const scope = ids ? { salesId: { in: ids } } : {};
+  const scopedLeadIds = ids ? (await db.lead.findMany({ where: scope, select: { id: true } })).map((lead) => lead.id) : [];
+  const callScope = ids ? { OR: [{ salesId: { in: ids } }, { leadId: { in: scopedLeadIds } }] } : {};
   const [leads, orders, agents, activities, calls, users, dataRequests, importBatches, leadPoolCount] = await Promise.all([
     db.lead.findMany({ where: scope, include: { sales: { select: publicUserSelect } }, orderBy: { updatedAt: "desc" } }),
     db.order.findMany({ where: scope, include: { lead: true, sales: { select: publicUserSelect }, files: true }, orderBy: { updatedAt: "desc" } }),
     db.agent.findMany({ orderBy: { name: "asc" } }),
     db.activity.findMany({ where: ids ? { userId: { in: ids } } : {}, take: 30, orderBy: { createdAt: "desc" } }),
-    db.callLog.findMany({ where: scope, orderBy: { startedAt: "desc" }, take: 300 }),
+    db.callLog.findMany({ where: callScope, orderBy: { startedAt: "desc" }, take: 1000 }),
     db.user.findMany({ where: ids ? { id: { in: ids } } : {}, select: publicUserSelect }),
     db.leadDataRequest.findMany({where:ids?{userId:{in:ids}}:{},include:{user:{select:publicUserSelect}},orderBy:{requestedAt:"desc"},take:50}),
     manager(user)?db.leadImportBatch.findMany({orderBy:{createdAt:"desc"},take:30}):Promise.resolve([]),
@@ -21,7 +23,7 @@ export async function scopedData(user: PublicUser) {
   const statuses: Record<string, LeadStatus> = { NEW: "MỚI", IN_PROGRESS: "ĐANG_CHĂM_SÓC", CONVERTED: "CHUYỂN_ĐƠN", FAILED: "FAIL" };
   return {
     leads: leads.map((lead) => ({
-      id: lead.id, name: lead.name, phone: lead.phone, company: lead.company || "", companyFoundedAt: lead.companyFoundedAt?.toISOString().slice(0, 10) || null, taxId: lead.taxId || "", address: lead.address || "", industry: lead.industry || "", source: lead.source || "",
+      id: lead.id, name: lead.name, phone: lead.phone, email: lead.email || "", company: lead.company || "", companyFoundedAt: lead.companyFoundedAt?.toISOString().slice(0, 10) || null, taxId: lead.taxId || "", address: lead.address || "", industry: lead.industry || "", source: lead.source || "",
       needs: lead.needs || "", isInterested: lead.interestState === "YES", interestState: lead.interestState,
       callDurationSeconds: lead.callDurationSeconds, callCount: lead.callCount, status: statuses[lead.status] || "MỚI",
       lastCall: (lead.lastContactAt || lead.createdAt).toISOString().slice(0, 10), sales: lead.sales?.name || "Chưa giao",

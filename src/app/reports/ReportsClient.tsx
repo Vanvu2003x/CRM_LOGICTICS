@@ -107,7 +107,7 @@ export default function ReportsClient({ data, query, activeUser }: Props) {
             </div>
             <div className="mt-5 grid grid-cols-2 gap-2 border-t pt-4">
               <Mini label="Phản hồi đầu" value={k.responseHours === null ? "Chưa có" : `${k.responseHours} giờ`} />
-              <Mini label="Thời gian gọi" value={`${Math.round(k.duration / 60)} phút`} />
+              <Mini label="Thời gian gọi" value={`${k.duration}s`} />
             </div>
           </section>
         </div>

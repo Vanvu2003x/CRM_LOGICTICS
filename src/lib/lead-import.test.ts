@@ -7,7 +7,7 @@ describe("parseLeadImportMatrix", () => {
       ["Tên người liên hệ", "Số điện thoại", "Tên công ty", "Ngày thành lập công ty", "Mã số thuế", "Địa chỉ", "Ngành nghề", "Nhu cầu"],
       ["Phương", 394782738, "LP", "12/03/2020", "09278274", "Hà Nội", "Logistics", "TQ - VN"],
     ]);
-    expect(result.valid).toEqual([{ name: "Phương", phone: "0394782738", company: "LP", companyFoundedAt: "2020-03-12", taxId: "09278274", address: "Hà Nội", industry: "Logistics", needs: "TQ - VN", source: "EXCEL" }]);
+    expect(result.valid).toEqual([{ name: "Phương", phone: "0394782738", email: "", company: "LP", companyFoundedAt: "2020-03-12", taxId: "09278274", address: "Hà Nội", industry: "Logistics", needs: "TQ - VN" }]);
     expect(result.errors).toEqual([]);
   });
 
@@ -24,5 +24,14 @@ describe("parseLeadImportMatrix", () => {
 
   it("requires recognizable name and phone columns", () => {
     expect(() => parseLeadImportMatrix([["Foo", "Bar"], ["A", "B"]])).toThrow("Không tìm thấy cột");
+  });
+
+  it("allows optional columns to be omitted and preserves international numbers", () => {
+    const result = parseLeadImportMatrix([
+      ["Tên khách", "Điện thoại"],
+      ["Maria", "+1 (202) 555-0123"],
+    ]);
+    expect(result.valid[0]).toMatchObject({ name: "Maria", phone: "+12025550123", email: "", company: "" });
+    expect(result.errors).toEqual([]);
   });
 });

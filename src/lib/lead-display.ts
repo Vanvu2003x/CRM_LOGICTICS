@@ -4,6 +4,7 @@ const sourceLabels: Record<string, string> = {
   TRADE_FAIR: "Hội chợ",
   TEST_E2E: "Dữ liệu kiểm thử",
   EXCEL: "Nhập từ Excel",
+  COMPANY: "Công ty",
 };
 
 export function leadSourceLabel(source?: string | null) {

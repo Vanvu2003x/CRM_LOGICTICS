@@ -69,7 +69,7 @@ export function buildDashboard(leads: DemoLead[], orders: DemoOrder[], today: st
     newToday: leads.filter((lead) => lead.status === "MỚI" && lead.lastCall === today).length,
     failed: orders.filter((order) => order.status === "FAILED").length + leads.filter((lead) => lead.status === "FAIL").length,
     pipeline: stages.map((name, index) => ({ name, step: index + 1, count: stepOrders(index + 1).length })),
-    funnel: [{ name: "Cuộc gọi ITY", value: leads.filter((lead) => lead.source.includes("ITY")).reduce((sum, lead) => sum + lead.callCount, 0) }, { name: "Có nhu cầu", value: interested.length }, { name: "Đang chăm sóc", value: leads.filter((lead) => lead.status === "ĐANG_CHĂM_SÓC").length }, { name: "Đã tạo đơn", value: leads.filter((lead) => lead.status === "CHUYỂN_ĐƠN").length }, { name: "Hoàn thành", value: completed.length }],
+    funnel: [{ name: "Cuộc gọi ITY", value: leads.filter((lead) => lead.source.includes("ITY")).reduce((sum, lead) => sum + lead.callCount, 0) }, { name: "Có nhu cầu", value: interested.length }, { name: "Đang chăm sóc", value: leads.filter((lead) => lead.status === "ĐANG_CHĂM_SÓC").length }, { name: "Đã hợp tác", value: leads.filter((lead) => lead.status === "CHUYỂN_ĐƠN").length }, { name: "Hoàn thành", value: completed.length }],
     ityLeads: leads.filter((lead) => lead.source.includes("ITY")).sort((a, b) => b.lastCall.localeCompare(a.lastCall)).slice(0, 4),
   };
 }

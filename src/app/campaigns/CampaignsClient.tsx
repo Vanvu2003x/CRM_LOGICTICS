@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from "@/hooks/use-toast";
 import { createCampaign, updateCampaignStatus, updateProductStep } from "./actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, ShieldAlert } from "lucide-react";
+import { AlertCircle, ArrowLeft, ShieldAlert } from "lucide-react";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 
 type ProductWithUserAndCampaign = CampaignProduct & { user: PublicUser; campaign: Campaign };
@@ -219,7 +219,7 @@ export default function CampaignsClient({ users, campaigns, products, nowIso }: 
           <TabsTrigger value="plan">Chi tiết & phân công <span className="ml-1 rounded-full bg-slate-100 px-1.5 text-[10px]">{permittedProducts.length}</span></TabsTrigger>
         </TabsList>
         <TabsContent value="plan">
-          <div className="mb-4 rounded-xl border bg-white p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm font-semibold text-slate-900">{campaigns.find(c=>c.id===selectedCampaignId)?.name||"Chi tiết và phân công"}</p><p className="mt-1 text-sm text-slate-500">{isAdmin ? "Tạo phân công ngay tại đây; khi đã mở một chiến dịch, biểu mẫu sẽ tự gắn đúng chiến dịch đó." : "Theo dõi deadline và trạng thái các nhiệm vụ của bạn."}</p></div>{isAdmin&&<AssignmentForm key={selectedCampaignId||"all"} campaigns={campaigns} users={users} selectedCampaignId={selectedCampaignId}/>}</div></div>
+          <div className="mb-4 rounded-xl border bg-white p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div className="flex min-w-0 items-start gap-3"><Button type="button" variant="outline" size="sm" onClick={()=>{setSelectedCampaignId("");setTab("campaigns");}} className="shrink-0"><ArrowLeft className="mr-1 size-4" />Về danh sách</Button><div className="min-w-0"><p className="truncate text-sm font-semibold text-slate-900">{campaigns.find(c=>c.id===selectedCampaignId)?.name||"Chi tiết và phân công"}</p><p className="mt-1 text-sm text-slate-500">{isAdmin ? "Tạo phân công ngay tại đây; khi đã mở một chiến dịch, biểu mẫu sẽ tự gắn đúng chiến dịch đó." : "Theo dõi deadline và trạng thái các nhiệm vụ của bạn."}</p></div></div>{isAdmin&&<AssignmentForm key={selectedCampaignId||"all"} campaigns={campaigns} users={users} selectedCampaignId={selectedCampaignId}/>}</div></div>
           <CampaignPlanBoard key={selectedCampaignId||"all"} products={permittedProducts} campaigns={campaigns} users={users} isAdmin={isAdmin} nowIso={nowIso} loading={loading} onAction={handleAction} selectedCampaignId={selectedCampaignId} />
         </TabsContent>
 

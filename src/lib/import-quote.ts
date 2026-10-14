@@ -3,6 +3,8 @@ export type ImportQuoteCategory = "FREIGHT" | "ORIGIN" | "VIETNAM";
 
 export type ImportQuoteLine = {
   name: string;
+  loadPort?: string;
+  dischargePort?: string;
   unit: string;
   price: number;
   quantity: number;
@@ -73,6 +75,8 @@ export function parseImportQuoteMatrix(rows: unknown[][], formulas: Record<strin
     const note = [normalizedText(row[8]), normalizedText(row[9])].filter(Boolean).join(" · ");
     lines.push({
       name: category === "FREIGHT" && destination ? `Cước quốc tế: ${first} → ${destination}` : first,
+      loadPort: category === "FREIGHT" ? first : "",
+      dischargePort: category === "FREIGHT" ? destination : "",
       unit: normalizedText(row[3]),
       price,
       quantity,

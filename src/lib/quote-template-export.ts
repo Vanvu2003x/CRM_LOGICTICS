@@ -2,6 +2,8 @@ import JSZip from "jszip";
 
 export type QuoteTemplateLine = {
   name?: string;
+  loadPort?: string;
+  dischargePort?: string;
   unit?: string;
   price?: number;
   quantity?: number;
@@ -117,7 +119,8 @@ export async function exportQuoteTemplate({
       const quantity = Number(line.quantity || 0);
       const price = Number(line.price || 0);
       const fixedVnd = Number(line.fixedVnd || 0);
-      xml = patchText(xml, `A${row}`, line.name || "");
+      xml = patchText(xml, `A${row}`, line.category === "FREIGHT" ? (line.loadPort || line.name || "") : (line.name || ""));
+      xml = patchText(xml, `B${row}`, line.category === "FREIGHT" ? (line.dischargePort || "") : "");
       xml = patchNumber(xml, `C${row}`, quantity);
       xml = patchText(xml, `D${row}`, line.unit || "");
       xml = patchNumber(xml, `E${row}`, price);

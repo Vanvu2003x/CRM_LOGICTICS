@@ -30,6 +30,8 @@ export type DemoOrder = {
   id: string;
   publicCode?: string | null;
   customer: string;
+  customerName?: string | null;
+  company?: string | null;
   step: number;
   type: "EXPORT" | "IMPORT";
   date: string;

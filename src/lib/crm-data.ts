@@ -32,6 +32,7 @@ export async function scopedData(user: PublicUser) {
     })),
     orders: orders.map((order) => ({
       id: order.code, publicCode: order.publicCode, dbId: order.id, customer: order.customerName || order.lead?.company || order.lead?.name || order.code,
+      customerName: order.lead?.name || order.customerName || null, company: order.lead?.company || null,
       step: order.currentStep, type: order.type === "IMPORT" ? "IMPORT" as const : "EXPORT" as const,
       date: order.createdAt.toISOString().slice(0, 10), sales: order.sales.name, salesId: order.salesId,
       exportPort: order.exportPort, importPort: order.importPort, expectedDate: order.expectedDate?.toISOString() || null, quantity: order.quantity, incoterms: order.incoterms,

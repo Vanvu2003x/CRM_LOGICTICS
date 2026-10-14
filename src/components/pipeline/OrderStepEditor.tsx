@@ -84,7 +84,7 @@ export default function OrderStepEditor({order,step,onAdvance}:{order:DemoOrder;
  const [busy,setBusy] = useState(false);
  const [message,setMessage] = useState("");
  const locked = order.status !== "IN_PROGRESS" || step>order.step;
- const isImportQuote = step===4 && order.type==="IMPORT";
+ const isImportQuote = step===4;
  const showQuoteSections = step===4;
  const quoteMode = (String(values.quoteMode||"FCL")==="LCL"?"LCL":"FCL") as ImportQuoteMode;
  const exchangeRate = Math.max(1,Number(values.exchangeRate||26600));

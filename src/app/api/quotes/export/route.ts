@@ -21,7 +21,6 @@ export async function POST(request: Request) {
     };
     const order = await ownedOrder(user, String(body.orderId || ""));
     if (order.status !== "IN_PROGRESS") throw new Error("Đơn hàng đã đóng, không thể xuất báo giá.");
-    if (order.type !== "IMPORT") throw new Error("Mẫu Excel này chỉ dùng cho báo giá nhập khẩu.");
     if (!Array.isArray(body.lines)) throw new Error("Dữ liệu báo giá không hợp lệ.");
 
     const mode = String(body.mode || order.transportMethod || "FCL").toUpperCase() === "LCL" ? "lcl" : "fcl";

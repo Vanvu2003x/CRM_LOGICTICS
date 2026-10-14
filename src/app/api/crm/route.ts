@@ -189,9 +189,14 @@ export async function POST(request: Request) {
       }
       await activity(user, action === "order.save" ? "lưu bước " + step + " của " + id : "cập nhật tiến độ " + id, "/pipeline/" + id);
       return NextResponse.json({ success: true, step: target });
-    } else if (action === "agent.create" || action === "agent.update") {
-      if (!manager(user) && action === "agent.update") throw new Error("Chỉ quản lý được sửa đại lý.");
-      if (action === "agent.create") {if(!text(data.name,200))throw new Error("Nhập tên đại lý.");await db.agent.create({ data: { name: text(data.name, 200), country: text(data.country, 100), city: text(data.city, 100), contact: text(data.contactName ?? data.contact, 200), contactName:text(data.contactName ?? data.contact,200),phone:text(data.phone??"",50)||null,whatsapp:text(data.whatsapp??"",100)||null,email:text(data.email??"",200)||null,notes:text(data.notes??"",2000)||null,rating: Math.min(5, Math.max(1, Number(data.rating) || 4)) } });}
+    } else if (action === "agent.create" || action === "agent.update" || action === "agent.delete") {
+      if (!manager(user) && action !== "agent.create") throw new Error("Chỉ quản lý được quản lý đại lý.");
+      if (action === "agent.delete") {
+        if (!id) throw new Error("Thiếu đại lý cần xóa.");
+        const orderCount = await db.order.count({ where: { agentId: id } });
+        if (orderCount > 0) throw new Error("Đại lý này đã có đơn hàng nên không thể xóa.");
+        await db.agent.delete({ where: { id } });
+      } else if (action === "agent.create") {if(!text(data.name,200))throw new Error("Nhập tên đại lý.");await db.agent.create({ data: { name: text(data.name, 200), country: text(data.country, 100), city: text(data.city, 100), contact: text(data.contactName ?? data.contact, 200), contactName:text(data.contactName ?? data.contact,200),phone:text(data.phone??"",50)||null,whatsapp:text(data.whatsapp??"",100)||null,email:text(data.email??"",200)||null,notes:text(data.notes??"",2000)||null,rating: Math.min(5, Math.max(1, Number(data.rating) || 4)) } });}
       else { const update: Record<string, string | null> = {}; for (const key of ["name", "country", "city", "contact", "contactName", "phone", "whatsapp", "email", "notes", "status"]) if (typeof data[key] === "string") update[key] = text(data[key], key==="notes"?2000:200)||null; if (update.status && !["ACTIVE", "INACTIVE"].includes(update.status)) throw new Error("Trạng thái không hợp lệ."); if(update.contactName)update.contact=update.contactName;await db.agent.update({ where: { id }, data: update }); }
       await activity(user, "cập nhật đại lý", "/agents");
     } else throw new Error("Thao tác không được hỗ trợ.");

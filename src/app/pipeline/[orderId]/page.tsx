@@ -256,7 +256,7 @@ function OrderDetailContent({ params }: { params: Promise<{ orderId: string }> }
                     </span>
                   </div>
 
-                  {log.recordingUrl && <audio controls src={log.recordingUrl} className="h-8 w-full"/>}
+                  {log.recordingUrl && <audio controls src={`/api/calls/${log.id}/recording`} className="h-8 w-full"/>}
                 </div>
               ))}
             </div>

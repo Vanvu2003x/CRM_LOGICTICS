@@ -40,6 +40,8 @@ export type DemoOrder = {
   exportPort?: string | null;
   importPort?: string | null;
   expectedDate?: string | null;
+  etd?: string | null;
+  eta?: string | null;
   quantity?: string | null;
   incoterms?: string | null;
   dbId?: string;

@@ -102,6 +102,24 @@ export async function POST(request: Request) {
       ]);
       await activity(user, "tạo đơn " + code, "/pipeline/" + code);
       return NextResponse.json({ orderCode: code });
+    } else if (action === "order.quickUpdate") {
+      const order = await ownedOrder(user, id);
+      const saved = readJson<SavedSteps>(order.stepsData, {});
+      const info = saved[2] || {};
+      const transport = saved[6] || {};
+      const customerName = typeof data.customerName === "string" ? text(data.customerName, 300) : order.customerName;
+      const company = typeof data.company === "string" ? text(data.company, 300) : "";
+      const type = data.type === "IMPORT" ? "IMPORT" : data.type === "EXPORT" ? "EXPORT" : order.type;
+      const etd = typeof data.etd === "string" ? text(data.etd, 40) : String(transport.etd || "");
+      const eta = typeof data.eta === "string" ? text(data.eta, 40) : String(transport.eta || "");
+      for (const value of [etd, eta]) if (value && !Number.isFinite(new Date(value + "T12:00:00+07:00").getTime())) throw new Error("ETD/ETA không hợp lệ.");
+      saved[2] = { ...info, type: String(type), exportPort: typeof data.exportPort === "string" ? text(data.exportPort, 200) : String(info.exportPort || ""), importPort: typeof data.importPort === "string" ? text(data.importPort, 200) : String(info.importPort || ""), incoterms: typeof data.incoterms === "string" ? text(data.incoterms, 50) : String(info.incoterms || ""), quantity: typeof data.quantity === "string" ? text(data.quantity, 100) : String(info.quantity || "") };
+      saved[6] = { ...transport, etd, eta };
+      await db.$transaction(async tx => {
+        await tx.order.update({ where: { id: order.id }, data: { customerName, type, exportPort: typeof data.exportPort === "string" ? text(data.exportPort, 200) : order.exportPort, importPort: typeof data.importPort === "string" ? text(data.importPort, 200) : order.importPort, incoterms: typeof data.incoterms === "string" ? text(data.incoterms, 50) : order.incoterms, quantity: typeof data.quantity === "string" ? text(data.quantity, 100) : order.quantity, expectedDate: eta ? new Date(eta + "T12:00:00+07:00") : order.expectedDate, stepsData: JSON.stringify(saved) } });
+        if (order.leadId) await tx.lead.update({ where: { id: order.leadId }, data: { name: customerName || undefined, company: company || null } });
+      });
+      await activity(user, "sửa nhanh thông tin đơn " + order.code, "/orders");
     } else if (["order.save", "order.complete", "order.move", "order.feedback"].includes(action)) {
       const order = await ownedOrder(user, id);
       const step = Number(data.step ?? body.step);

@@ -31,6 +31,7 @@ export async function scopedData(user: PublicUser) {
       history: readJson<unknown[]>(lead.contactHistory, []), originRef: lead.originRef, callOutcome: lead.callOutcome,
     })),
     orders: orders.map((order) => ({
+      ...(() => { const transport = readJson<SavedSteps>(order.stepsData, {})[6] || {}; return { etd: typeof transport.etd === "string" ? transport.etd : null, eta: typeof transport.eta === "string" ? transport.eta : null }; })(),
       id: order.code, publicCode: order.publicCode, dbId: order.id, customer: order.customerName || order.lead?.company || order.lead?.name || order.code,
       customerName: order.lead?.name || order.customerName || null, company: order.lead?.company || null,
       step: order.currentStep, type: order.type === "IMPORT" ? "IMPORT" as const : "EXPORT" as const,

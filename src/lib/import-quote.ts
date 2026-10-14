@@ -5,6 +5,8 @@ export type ImportQuoteLine = {
   name: string;
   loadPort?: string;
   dischargePort?: string;
+  groupId?: string;
+  groupName?: string;
   unit: string;
   price: number;
   quantity: number;

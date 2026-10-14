@@ -133,9 +133,6 @@ export async function exportQuoteTemplate({
 
   xml = patchText(xml, "A8", `Ngày báo giá: ${formatDate()}`);
   xml = patchText(xml, "C10", attention || company);
-  xml = patchText(xml, "C11", company);
-  xml = patchText(xml, "A13", `LP xin được gửi lời chào trân trọng tới ${attention || "Quý khách hàng"} và ${company || "Quý Công ty"}`);
-  xml = patchText(xml, "A14", `Dựa trên các thông tin nhận được, chúng tôi xin được gửi tới ${attention || "Quý khách hàng"} và Quý Công ty báo giá dịch vụ như sau:`);
 
   const groups: Record<"FREIGHT" | "ORIGIN" | "VIETNAM", number[]> = {
     FREIGHT: layout.freight,

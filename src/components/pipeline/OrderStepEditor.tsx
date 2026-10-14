@@ -134,10 +134,6 @@ export default function OrderStepEditor({order,step,onAdvance}:{order:DemoOrder;
    const response=await fetch("/api/quotes/export",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
     orderId:order.id,
     mode:quoteMode,
-    incoterm:String(values.quoteIncoterm||order.data?.[2]?.incoterms||"EXW"),
-    company:String(values.quoteCompany||order.customer),
-    attention:String(values.quoteAttention||order.customer),
-    exchangeRate,
     lines,
    })});
    if(!response.ok){const result=await response.json().catch(()=>({}));setMessage(String(result.error||"Không thể xuất Excel báo giá."));return;}

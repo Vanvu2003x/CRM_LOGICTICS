@@ -13,10 +13,6 @@ export async function POST(request: Request) {
     const body = await request.json() as {
       orderId?: string;
       mode?: "fcl" | "lcl";
-      incoterm?: string;
-      company?: string;
-      attention?: string;
-      exchangeRate?: number;
       lines?: QuoteTemplateLine[];
     };
     const order = await ownedOrder(user, String(body.orderId || ""));
@@ -28,10 +24,10 @@ export async function POST(request: Request) {
     const template = await readFile(path);
     const workbook = await exportQuoteTemplate({
       template,
-      incoterm: String(body.incoterm || order.incoterms || "EXW"),
-      company: String(body.company || order.customerName || ""),
-      attention: String(body.attention || order.customerName || ""),
-      exchangeRate: Number(body.exchangeRate || 26600),
+      incoterm: String(order.incoterms || "EXW"),
+      company: "",
+      attention: user.name,
+      exchangeRate: 26600,
       mode,
       lines: body.lines,
     });

@@ -20,7 +20,7 @@ describe("exportQuoteTemplate", () => {
     const fileNames = (zip: JSZip) => Object.keys(zip.files).filter(name => !name.endsWith("/"));
     expect(fileNames(outputZip).sort()).toEqual(fileNames(originalZip).sort());
     const sheet = await outputZip.file("xl/worksheets/sheet1.xml")!.async("string");
-    expect(sheet).toContain("Công ty mẫu");
+    expect(sheet).toContain("Nguyễn Văn A");
     expect(sheet).toContain("Shanghai, China");
     expect(sheet).toContain("E18*C18");
     expect(sheet).toContain("G18*26000");
@@ -74,7 +74,7 @@ describe("exportQuoteTemplate", () => {
     const sheet = await zip.file("xl/worksheets/sheet1.xml")!.async("string");
     expect(sheet).toContain("Cảng thật");
     expect(sheet).toContain("Phí thật");
-    expect(sheet).toContain("Công ty thật");
+    expect(sheet).toContain("Người nhận thật");
     expect(sheet).toContain("Nhóm phí thật");
   });
 });

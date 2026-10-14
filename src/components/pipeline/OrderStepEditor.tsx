@@ -139,7 +139,6 @@ export default function OrderStepEditor({order,step,onAdvance}:{order:DemoOrder;
    if(!response.ok){const result=await response.json().catch(()=>({}));setMessage(String(result.error||"Không thể xuất Excel báo giá."));return;}
    const blob=await response.blob();
    const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download=`${order.id}-bao-gia-${quoteMode}.xlsx`;document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);
-   setMessage("Đã xuất báo giá Excel theo đúng mẫu gốc.");
   }catch{setMessage("Không thể xuất Excel báo giá. Kiểm tra lại dữ liệu rồi thử lại.");}
   finally{setBusy(false);}
  }

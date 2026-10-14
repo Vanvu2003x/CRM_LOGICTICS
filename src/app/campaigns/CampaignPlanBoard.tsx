@@ -9,8 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { campaignDeadlineState, campaignDeadlineText, type CampaignDeadlineState } from "@/lib/campaign-deadline";
 import { campaignArtifacts } from "@/lib/campaign-artifacts";
-import { paginate, matchesCampaignProduct } from "@/lib/campaign-list";
-import CampaignPagination from "./CampaignPagination";
+import { matchesCampaignProduct } from "@/lib/campaign-list";
 import { updateAssignmentDetails } from "./actions";
 
 type Product = CampaignProduct & { user: PublicUser; campaign: Campaign };
@@ -63,8 +62,6 @@ export default function CampaignPlanBoard({ products, campaigns, users, isAdmin,
   const [query, setQuery] = useState("");
   const [campaignId, setCampaignId] = useState(selectedCampaignId || "ALL");
   const [ownerId, setOwnerId] = useState("ALL");
-  const [page,setPage]=useState(1);
-  const [size,setSize]=useState(20);
   const [kind,setKind]=useState("ALL");
   const [step,setStep]=useState("ALL");
   const [status, setStatus] = useState("ALL");
@@ -75,7 +72,7 @@ export default function CampaignPlanBoard({ products, campaigns, users, isAdmin,
     return matchesCampaignProduct(product,{owner:ownerId,type:kind,step}) && (!query || text.includes(query.toLocaleLowerCase("vi-VN"))) && (campaignId === "ALL" || product.campaignId === campaignId) && (ownerId === "ALL" || product.userId === ownerId) && (status === "ALL" || state === status);
   }).sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime()), [products, query, campaignId, ownerId, status, kind, step, now]);
 
-  const paging=paginate(rows,page,size);
+  const paging={items:rows};
   const counts = products.reduce((acc, product) => { const state = campaignDeadlineState({ deadline: deadlineOf(product), step: product.step, completedAt: product.completedAt }, now); acc.total++; if (state === "OVERDUE") acc.overdue++; if (state === "DUE_SOON") acc.soon++; if (state.startsWith("DONE")) acc.done++; return acc; }, { total: 0, overdue: 0, soon: 0, done: 0 });
 
   function openEdit(product: Product) {
@@ -99,15 +96,15 @@ export default function CampaignPlanBoard({ products, campaigns, users, isAdmin,
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{cards.map(card => <article key={card.label} className="flex items-center gap-3 rounded-xl border bg-white p-3 shadow-sm"><span className={`grid size-10 place-items-center rounded-lg ${card.color}`}><card.icon className="size-5" /></span><div><p className="text-xs text-slate-500">{card.label}</p><p className="text-xl font-bold text-slate-950">{card.value}</p></div></article>)}</div>
 
     <div className="flex flex-col gap-2 rounded-xl border bg-white p-3 lg:flex-row lg:flex-wrap">
-      <label className="relative min-w-0 flex-1"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" /><input aria-label="Tìm nội dung" value={query} onChange={e => {setQuery(e.target.value);setPage(1);}} placeholder="Tìm nội dung, chiến dịch, nhân viên..." className={`${input} w-full pl-9`} /></label>
-      <select aria-label="Lọc chiến dịch" className={input} value={campaignId} onChange={e => {setCampaignId(e.target.value);setPage(1);}}><option value="ALL">Tất cả chiến dịch</option>{campaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
-      <select aria-label="Lọc nhân viên" className={input} value={ownerId} onChange={e => {setOwnerId(e.target.value);setPage(1);}}><option value="ALL">Tất cả nhân viên</option>{users.map(u => <option key={u.id} value={u.id}>{u.name}{u.extension?` · máy lẻ ${u.extension}`:""}</option>)}</select>
-      <select aria-label="Lọc deadline" className={input} value={status} onChange={e => {setStatus(e.target.value);setPage(1);}}><option value="ALL">Tất cả tiến độ</option><option value="ACTIVE">Đang thực hiện</option><option value="DUE_SOON">Sắp đến hạn</option><option value="OVERDUE">Quá hạn</option><option value="DONE_ON_TIME">Đúng hạn</option><option value="DONE_LATE">Hoàn thành trễ</option></select>
+      <label className="relative min-w-0 flex-1"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" /><input aria-label="Tìm nội dung" value={query} onChange={e => {setQuery(e.target.value);}} placeholder="Tìm nội dung, chiến dịch, nhân viên..." className={`${input} w-full pl-9`} /></label>
+      <select aria-label="Lọc chiến dịch" className={input} value={campaignId} onChange={e => {setCampaignId(e.target.value);}}><option value="ALL">Tất cả chiến dịch</option>{campaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+      <select aria-label="Lọc nhân viên" className={input} value={ownerId} onChange={e => {setOwnerId(e.target.value);}}><option value="ALL">Tất cả nhân viên</option>{users.map(u => <option key={u.id} value={u.id}>{u.name}{u.extension?` · máy lẻ ${u.extension}`:""}</option>)}</select>
+      <select aria-label="Lọc deadline" className={input} value={status} onChange={e => {setStatus(e.target.value);}}><option value="ALL">Tất cả tiến độ</option><option value="ACTIVE">Đang thực hiện</option><option value="DUE_SOON">Sắp đến hạn</option><option value="OVERDUE">Quá hạn</option><option value="DONE_ON_TIME">Đúng hạn</option><option value="DONE_LATE">Hoàn thành trễ</option></select>
     </div>
 
     <div className="flex flex-wrap gap-2">
-      <select aria-label="Lọc loại nhiệm vụ kế hoạch" className={input} value={kind} onChange={e=>{setKind(e.target.value);setPage(1);}}><option value="ALL">Nhiệm vụ & bài phạt</option><option value="NORMAL">Nhiệm vụ chính</option><option value="PENALTY">Bài phạt</option></select>
-      <select aria-label="Lọc bước kế hoạch" className={input} value={step} onChange={e=>{setStep(e.target.value);setPage(1);}}><option value="ALL">Tất cả bước duyệt</option>{Object.entries(stepLabels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select>
+      <select aria-label="Lọc loại nhiệm vụ kế hoạch" className={input} value={kind} onChange={e=>{setKind(e.target.value);}}><option value="ALL">Nhiệm vụ & bài phạt</option><option value="NORMAL">Nhiệm vụ chính</option><option value="PENALTY">Bài phạt</option></select>
+      <select aria-label="Lọc bước kế hoạch" className={input} value={step} onChange={e=>{setStep(e.target.value);}}><option value="ALL">Tất cả bước duyệt</option>{Object.entries(stepLabels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select>
     </div>
 
     <div className="hidden overflow-hidden rounded-xl border bg-white shadow-sm xl:block"><div className="overflow-x-auto"><table className="crm-campaign-table w-full table-fixed text-left"><thead className="bg-slate-900 text-slate-100"><tr>{[["Deadline","w-28"],["Nhân viên","w-28"],["Nội dung","w-28"],["Loại","w-24"],["YC thời lượng","w-24"],["Bằng chứng","w-32"],["Yêu cầu nội dung","w-48"],["Mục","w-20"],["Tiến độ","w-32"],["Thao tác","w-24"]].map(([label,width]) => <th key={label} className={`px-3 py-3 font-semibold ${width}`}>{label}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{paging.items.map(({ product, deadline, state }) => {
@@ -116,8 +113,6 @@ export default function CampaignPlanBoard({ products, campaigns, users, isAdmin,
     })}</tbody></table></div>{rows.length === 0 && <p className="p-10 text-center text-sm text-slate-500">Không có nội dung phù hợp bộ lọc.</p>}</div>
 
     <div className="grid gap-3 xl:hidden">{paging.items.map(({ product, deadline, state }) => { const meta = statusMeta[state], link = safeLink(product.link), artifacts = campaignArtifacts(product.history); return <article key={product.id} className={`rounded-xl border bg-white p-4 shadow-sm ${state === "OVERDUE" ? "border-rose-200" : ""}`}><div className="flex items-start justify-between gap-3"><div><p className="font-semibold text-slate-950">{product.type === "PENALTY" && <span className="mr-1 rounded bg-rose-100 px-1.5 py-0.5 text-[10px] text-rose-700">PHẠT</span>}{product.title || product.campaign.name}</p><p className="mt-1 text-xs text-slate-500">{product.user.name} · {product.campaign.name}</p></div><span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold ${meta.className}`}>{meta.label}</span></div><div className="mt-3 grid grid-cols-2 gap-3 text-xs"><div><p className="text-slate-400">Deadline</p><p className="font-semibold text-slate-700">{viDate.format(new Date(deadline))}</p><p className="text-slate-500">{campaignDeadlineText({ deadline, step: product.step, completedAt: product.completedAt }, now)}</p></div><div><p className="text-slate-400">Loại / Mục</p><p className="font-medium text-slate-700">{typeLabels[product.contentType] || product.contentType} · {product.contentPillar || "OTHER"}</p><p className="text-slate-500">{product.durationSpec || "Chưa có thời lượng"}</p></div></div><p className="mt-3 border-t pt-3 text-xs leading-5 text-slate-600">{product.requirements || "Chưa có yêu cầu nội dung."}</p>{product.notes && <p className="mt-3 rounded-lg bg-rose-50 p-3 text-xs font-medium text-rose-700">Phản hồi cần sửa: {product.notes}</p>}<div className="mt-3 flex flex-wrap items-center gap-2">{artifacts.scriptLink && <a href={artifacts.scriptLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-xs font-semibold text-blue-600">Kịch bản <ExternalLink className="size-3" /></a>}{artifacts.productLink && <a href={artifacts.productLink} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-xs font-semibold text-emerald-700">Sản phẩm <ExternalLink className="size-3" /></a>}{!artifacts.scriptLink && !artifacts.productLink && link && <a href={link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-xs font-semibold text-blue-600">Link hiện tại <ExternalLink className="size-3" /></a>}{isAdmin && <button onClick={() => openEdit(product)} className="inline-flex items-center gap-1 rounded-md border px-3 py-2 text-xs font-semibold text-slate-700"><Pencil className="size-3" />Sửa</button>}{product.step !== "DONE" && <button disabled={loading || (product.step.includes("DRAFT") && !link) || (!product.step.includes("DRAFT") && !isAdmin)} onClick={() => void onAction(product.id, "FORWARD", product.step)} className="ml-auto rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40">{forwardLabel(product)}</button>}</div></article>; })}{rows.length === 0 && <p className="rounded-xl border border-dashed bg-white p-8 text-center text-sm text-slate-500">Không có nội dung phù hợp bộ lọc.</p>}</div>
-
-    <CampaignPagination page={paging.page} pages={paging.pages} total={paging.total} size={size} onPage={setPage} onSize={n=>{setSize(n);setPage(1);}}/>
 
     <Dialog open={Boolean(edit)} onOpenChange={open => !open && setEdit(null)}><DialogContent className="max-w-3xl"><DialogHeader><DialogTitle>Sửa kế hoạch nội dung</DialogTitle></DialogHeader>{edit && <div className="grid gap-3 py-2 md:grid-cols-2">
       <label className="grid gap-1 text-xs font-medium text-slate-600">Chiến dịch<select className={input} value={edit.campaignId} onChange={e => setEdit({ ...edit, campaignId: e.target.value })}>{campaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>

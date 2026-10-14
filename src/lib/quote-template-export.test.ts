@@ -55,4 +55,26 @@ describe("exportQuoteTemplate", () => {
     expect(sheet).toContain("Phí nâng hạ");
     expect(sheet).toContain("E21*C21");
   });
+
+  it("patches the active EXW sheet in the FCL template", async () => {
+    const source = await readFile(join(process.cwd(), "public/templates/bao-gia-nhap-khau-fcl.xlsx"));
+    const output = await exportQuoteTemplate({
+      template: source,
+      mode: "fcl",
+      incoterm: "EXW",
+      company: "Công ty thật",
+      attention: "Người nhận thật",
+      exchangeRate: 26500,
+      lines: [
+        { category: "FREIGHT", loadPort: "Cảng thật", dischargePort: "Cảng đích thật", line: "LINE thật", validUntil: "2026-10-20", unit: "40HC", quantity: 2, price: 123 },
+        { category: "ORIGIN", groupName: "Nhóm phí thật", name: "Phí thật", unit: "Lô", quantity: 1, price: 45 },
+      ],
+    });
+    const zip = await JSZip.loadAsync(output);
+    const sheet = await zip.file("xl/worksheets/sheet1.xml")!.async("string");
+    expect(sheet).toContain("Cảng thật");
+    expect(sheet).toContain("Phí thật");
+    expect(sheet).toContain("Công ty thật");
+    expect(sheet).toContain("Nhóm phí thật");
+  });
 });

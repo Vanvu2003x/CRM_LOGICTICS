@@ -28,9 +28,16 @@ const layouts: Record<string, SheetLayout> = {
   EXW: { freight: [18], origin: [21, 22, 23, 24, 25], vietnam: [28, 29, 30, 31, 32, 33], total: 35 },
   CIF: { freight: [], origin: [], vietnam: [17, 18, 19, 20, 21, 22, 23], total: 25 },
 };
+const fclLayouts: Record<string, SheetLayout> = {
+  EXW: { freight: [18], origin: [21, 22, 23, 24, 25, 26], vietnam: [29, 30, 31, 32, 33, 34, 35], total: 37 },
+  FCA: { freight: [18], origin: [21, 22, 23, 24, 25, 26], vietnam: [29, 30, 31, 32, 33, 34, 35], total: 37 },
+  FOB: { freight: [18], origin: [], vietnam: [21, 22, 23, 24, 25, 26, 27], total: 29 },
+};
 
 const sheetIndex: Record<string, number> = { FCA: 1, FOB: 2, EXW: 3, CIF: 4 };
+const fclSheetIndex: Record<string, number> = { EXW: 1, FCA: 2, FOB: 3 };
 const feeSectionHeaderRows: Record<string, number[]> = { FCA: [20, 26], FOB: [20], EXW: [20, 27], CIF: [16] };
+const fclFeeSectionHeaderRows: Record<string, number[]> = { FCA: [20, 28], FOB: [20], EXW: [20, 28] };
 
 const escapeXml = (value: unknown) => String(value ?? "")
   .replace(/&/g, "&amp;")
@@ -61,12 +68,14 @@ const cellStyle = (xml: string, ref: string) => {
 };
 
 const replaceCell = (xml: string, ref: string, replacement: string) => {
-  const cellPattern = new RegExp(`<c(?=[^>]*\\br="${ref}"(?:\\s|>))[^>]*(?:\\/>|>[\\s\\S]*?<\\/c>)`);
-  if (cellPattern.test(xml)) return xml.replace(cellPattern, replacement);
   const rowNumber = ref.match(/\d+/)?.[0];
   if (!rowNumber) return xml;
-  const rowPattern = new RegExp(`(<row[^>]*\\br="${rowNumber}"[^>]*>)([\\s\\S]*?)(<\\/row>)`);
-  return xml.replace(rowPattern, (_match, start, body, end) => `${start}${body}${replacement}${end}`);
+  const rowPattern = new RegExp(`(<row\\b[^>]*\\br="${rowNumber}"[^>]*>)([\\s\\S]*?)(<\\/row>)`);
+  const cellPattern = new RegExp(`<c\\b[^>]*\\br="${ref}"[^>]*(?:\\/>|>[\\s\\S]*?<\\/c>)`);
+  return xml.replace(rowPattern, (_match, start, body, end) => {
+    if (cellPattern.test(body)) return `${start}${body.replace(cellPattern, replacement)}${end}`;
+    return `${start}${body}${replacement}${end}`;
+  });
 };
 
 const clearCell = (xml: string, ref: string) => {
@@ -75,6 +84,14 @@ const clearCell = (xml: string, ref: string) => {
 };
 
 const patchText = (xml: string, ref: string, value: unknown) => replaceCell(xml, ref, textCell(ref, cellStyle(xml, ref), value));
+const patchTextEnsureCell = (xml: string, ref: string, value: unknown) => {
+  const patched = patchText(xml, ref, value);
+  if (patched !== xml) return patched;
+  const rowNumber = ref.match(/\d+/)?.[0];
+  if (!rowNumber) return xml;
+  const rowPattern = new RegExp(`(<row[^>]*\\br="${rowNumber}"[^>]*>)([\\s\\S]*?)(</row>)`);
+  return xml.replace(rowPattern, (_match, start, body, end) => `${start}${textCell(ref, undefined, value)}${body}${end}`);
+};
 const patchNumber = (xml: string, ref: string, value: number) => replaceCell(xml, ref, numberCell(ref, cellStyle(xml, ref), value));
 const patchFormula = (xml: string, ref: string, formula: string) => replaceCell(xml, ref, formulaCell(ref, cellStyle(xml, ref), formula));
 
@@ -94,6 +111,7 @@ export async function exportQuoteTemplate({
   attention,
   lines,
   exchangeRate,
+  mode = "lcl",
 }: {
   template: Uint8Array;
   incoterm: string;
@@ -101,11 +119,15 @@ export async function exportQuoteTemplate({
   attention: string;
   lines: QuoteTemplateLine[];
   exchangeRate: number;
+  mode?: "fcl" | "lcl";
 }) {
   const selectedSheet = String(incoterm || "EXW").toUpperCase();
-  const layout = layouts[selectedSheet] || layouts.EXW;
+  const selectedLayouts = mode === "fcl" ? fclLayouts : layouts;
+  const selectedSheetIndex = mode === "fcl" ? fclSheetIndex : sheetIndex;
+  const layout = selectedLayouts[selectedSheet] || selectedLayouts.EXW;
   const zip = await JSZip.loadAsync(template);
-  const sheetFile = zip.file(`xl/worksheets/sheet${sheetIndex[selectedSheet] || 3}.xml`);
+  const worksheetNumber = selectedSheetIndex[selectedSheet] || 1;
+  const sheetFile = zip.file(`xl/worksheets/sheet${worksheetNumber}.xml`);
   if (!sheetFile) throw new Error(`Không tìm thấy sheet ${selectedSheet} trong mẫu báo giá.`);
   let xml = await sheetFile.async("string");
 
@@ -135,12 +157,6 @@ export async function exportQuoteTemplate({
   }
   const fallbackGroupNames = { ORIGIN: "Phí đầu nước ngoài", VIETNAM: "Phí tại Việt Nam" };
   const groupNames = Array.from(new Set(lines.filter(line => line.category !== "FREIGHT").map(line => line.groupName || fallbackGroupNames[line.category as "ORIGIN" | "VIETNAM"]).filter(Boolean)));
-  const headerRows = feeSectionHeaderRows[selectedSheet] || [];
-  headerRows.forEach((row, index) => {
-    const name = groupNames[index];
-    if (name) xml = patchText(xml, `A${row}`, `${index + 2}, ${name}`);
-    else xml = clearCell(xml, `A${row}`);
-  });
   for (const category of Object.keys(groups) as Array<keyof typeof groups>) {
     const linesForCategory = categoryLines[category];
     const rows = groups[category];
@@ -164,8 +180,14 @@ export async function exportQuoteTemplate({
       xml = patchText(xml, `J${row}`, line.category === "FREIGHT" ? formatValidity(line.validUntil) : "");
     });
   }
+  const headerRows = (mode === "fcl" ? fclFeeSectionHeaderRows : feeSectionHeaderRows)[selectedSheet] || [];
+  headerRows.forEach((row, index) => {
+    const name = groupNames[index];
+    if (name) xml = patchTextEnsureCell(xml, `A${row}`, `${index + 2}, ${name}`);
+    else xml = clearCell(xml, `A${row}`);
+  });
   xml = patchFormula(xml, `G${layout.total}`, `SUM(G${Math.min(...Object.values(groups).flat())}:G${Math.max(...Object.values(groups).flat())})`);
   xml = patchFormula(xml, `H${layout.total}`, `SUM(H${Math.min(...Object.values(groups).flat())}:H${Math.max(...Object.values(groups).flat())})`);
-  zip.file(`xl/worksheets/sheet${sheetIndex[selectedSheet] || 3}.xml`, xml);
+  zip.file(`xl/worksheets/sheet${worksheetNumber}.xml`, xml);
   return zip.generateAsync({ type: "uint8array", compression: "DEFLATE" });
 }

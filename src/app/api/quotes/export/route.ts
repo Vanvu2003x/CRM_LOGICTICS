@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     const user = await requireUser();
     const body = await request.json() as {
       orderId?: string;
-      mode?: string;
+      mode?: "fcl" | "lcl";
       incoterm?: string;
       company?: string;
       attention?: string;
@@ -32,6 +32,7 @@ export async function POST(request: Request) {
       company: String(body.company || order.customerName || ""),
       attention: String(body.attention || order.customerName || ""),
       exchangeRate: Number(body.exchangeRate || 26600),
+      mode,
       lines: body.lines,
     });
     return new NextResponse(Buffer.from(workbook), {

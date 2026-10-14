@@ -2,6 +2,7 @@ import { requireUser, permittedUserIds, publicUserSelect } from "@/lib/auth";
 import { periodBounds } from "@/lib/business-rules";
 import { todayInVietnam } from "@/lib/dashboard";
 import { db } from "@/lib/db";
+import { ATTENDANCE_CALL_TARGET, attendanceMinutes, isAttendanceCounted } from "@/lib/attendance";
 import AttendanceClient from "./AttendanceClient";
 import EmployeeAttendanceClient from "./EmployeeAttendanceClient";
 
@@ -41,6 +42,20 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
     return result;
   }, {});
 
+  const monthlySummary = [] as { userId: string; name: string; shifts: number; workMinutes: number; kpiShifts: number; kpiRate: number }[];
+  if (!employeeView) {
+    const monthRange = periodBounds(selectedDate, "month");
+    const [monthSessions, monthCalls] = await Promise.all([
+      db.attendance.findMany({ where: { ...(ids ? { userId: { in: ids } } : {}), OR: [{ date: { gte: monthRange.start, lt: monthRange.end } }, { checkIn: { gte: monthRange.start, lt: monthRange.end } }] }, orderBy: { checkIn: "asc" } }),
+      db.callLog.findMany({ where: { ...(ids ? { salesId: { in: ids } } : {}), callid: { not: { startsWith: "demo-" } }, startedAt: { gte: monthRange.start, lt: monthRange.end } }, select: { salesId: true, startedAt: true } }),
+    ]);
+    for (const user of users) {
+      const sessions = monthSessions.filter(session => session.userId === user.id && isAttendanceCounted(session));
+      const kpiShifts = sessions.filter(session => monthCalls.filter(call => call.salesId === user.id && call.startedAt >= session.checkIn && call.startedAt <= (session.checkOut || new Date())).length >= ATTENDANCE_CALL_TARGET).length;
+      monthlySummary.push({ userId: user.id, name: user.name, shifts: sessions.length, workMinutes: attendanceMinutes(sessions), kpiShifts, kpiRate: sessions.length ? Math.round(kpiShifts / sessions.length * 100) : 0 });
+    }
+  }
+
   if (employeeView) return (
     <EmployeeAttendanceClient
       activeUser={activeUser}
@@ -56,6 +71,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
       users={users}
       initialAttendances={attendances}
       callCounts={callCounts}
+      monthlySummary={monthlySummary}
       selectedDate={selectedDate}
       today={today}
     />

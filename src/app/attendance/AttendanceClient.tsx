@@ -38,6 +38,7 @@ type AttendanceClientProps = {
   selectedDate: string;
   today: string;
   callCounts: Record<string, number>;
+  monthlySummary: { userId: string; name: string; shifts: number; workMinutes: number; kpiShifts: number; kpiRate: number }[];
 };
 
 const time = (value: Date | string | null) => value
@@ -57,7 +58,7 @@ function StatusBadge({ status }: { status: AttendanceStatus }) {
   return <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1 ring-inset ${copy.className}`}>{copy.label}</span>;
 }
 
-export default function AttendanceClient({ activeUser, users, initialAttendances, selectedDate, today, callCounts }: AttendanceClientProps) {
+export default function AttendanceClient({ activeUser, users, initialAttendances, selectedDate, today, callCounts, monthlySummary }: AttendanceClientProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [query, setQuery] = useState("");
@@ -133,7 +134,7 @@ export default function AttendanceClient({ activeUser, users, initialAttendances
           {paging.controls}
           {!rows.length && <div role="status" className="px-5 py-14 text-center"><Search className="mx-auto mb-3 size-8 text-slate-300" /><p className="text-sm font-medium text-slate-700">Không tìm thấy nhân viên phù hợp</p><p className="mt-1 text-xs text-slate-500">Thử đổi từ khóa hoặc bộ lọc trạng thái.</p></div>}
         </section>
-      ) : <AttendanceStats summary={summary} />}
+      ) : <AttendanceStats summary={summary} monthlySummary={monthlySummary} />}
     </div>
   );
 }
@@ -172,7 +173,7 @@ function AttendanceCard({ row, ...props }: ActionProps) {
   return <article className="space-y-3 p-4"><div className="flex items-start gap-3"><Avatar user={row.user as PublicUser} /><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-slate-900">{row.user.name}</p><p className={`text-xs font-semibold ${callKpi.reached ? "text-emerald-600" : "text-amber-600"}`}>Cuộc gọi: {callKpi.calls}/{callKpi.target}</p></div><StatusBadge status={row.status} /></div><div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-xs"><span className="text-slate-500">Giờ làm việc</span><span className="font-semibold tabular-nums text-slate-700">{latest ? `${time(latest.checkIn)} – ${time(latest.checkOut)}` : "Chưa có dữ liệu"}</span></div>{callKpi.warning && <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">Cảnh báo: chưa đủ 40 cuộc gọi trong ca.</p>}<div className="flex justify-end"><AttendanceAction row={row} {...props} /></div></article>;
 }
 
-function AttendanceStats({ summary }: { summary: ReturnType<typeof attendanceSummary> }) {
+function AttendanceStats({ summary, monthlySummary }: { summary: ReturnType<typeof attendanceSummary>; monthlySummary: AttendanceClientProps["monthlySummary"] }) {
   const items = [{ label: "Đã chấm công", value: summary.checked, color: "bg-emerald-500" }, { label: "Đang làm việc", value: summary.working, color: "bg-amber-500" }, { label: "Chưa chấm công", value: summary.missing, color: "bg-rose-400" }];
-  return <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-5"><h2 className="text-base font-bold text-slate-900">Thống kê trong ngày</h2><p className="mt-1 text-xs text-slate-500">Tổng hợp trên {summary.total} nhân viên thuộc phạm vi quản lý.</p></div><div className="space-y-5">{items.map((item) => <div key={item.label}><div className="mb-2 flex justify-between text-sm"><span className="font-medium text-slate-700">{item.label}</span><span className="font-bold tabular-nums text-slate-900">{item.value}</span></div><div className="h-2.5 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${item.color}`} style={{ width: `${summary.total ? Math.round(item.value / summary.total * 100) : 0}%` }} /></div></div>)}</div></section>;
+  return <div className="space-y-4"><section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-5"><h2 className="text-base font-bold text-slate-900">Tổng quan trong ngày</h2><p className="mt-1 text-xs text-slate-500">Tổng hợp trên {summary.total} nhân viên thuộc phạm vi quản lý.</p></div><div className="space-y-5">{items.map((item) => <div key={item.label}><div className="mb-2 flex justify-between text-sm"><span className="font-medium text-slate-700">{item.label}</span><span className="font-bold tabular-nums text-slate-900">{item.value}</span></div><div className="h-2.5 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${item.color}`} style={{ width: `${summary.total ? Math.round(item.value / summary.total * 100) : 0}%` }} /></div></div>)}</div></section><section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="border-b p-5"><h2 className="text-base font-bold text-slate-900">Tổng quan chấm công theo tháng</h2><p className="mt-1 text-xs text-slate-500">Mỗi nhân viên: số ca, tổng thời gian làm, số ca đạt 40 cuộc gọi ITY thật và tỷ lệ đạt KPI.</p></div><div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500"><tr>{["Nhân viên", "Số ca", "Thời gian làm", "Ca đạt KPI", "Tỷ lệ KPI"].map(label => <th key={label} className="px-5 py-3">{label}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{monthlySummary.map(row => <tr key={row.userId}><td className="px-5 py-3 font-semibold text-slate-900">{row.name}</td><td className="px-5 py-3">{row.shifts} ca</td><td className="px-5 py-3">{Math.floor(row.workMinutes / 60)}h {String(row.workMinutes % 60).padStart(2, "0")}p</td><td className="px-5 py-3 font-semibold text-emerald-700">{row.kpiShifts}/{row.shifts} ca</td><td className="px-5 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${row.kpiRate >= 100 ? "bg-emerald-50 text-emerald-700" : row.kpiRate ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-500"}`}>{row.kpiRate}%</span></td></tr>)}</tbody></table>{!monthlySummary.length && <p className="p-10 text-center text-sm text-slate-500">Chưa có dữ liệu chấm công trong tháng.</p>}</div></section></div>;
 }

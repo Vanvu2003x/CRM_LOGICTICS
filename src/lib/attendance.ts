@@ -67,8 +67,9 @@ export function attendanceMinutes(sessions: AttendanceSession[], now = new Date(
 }
 
 export function attendanceSummary(users: AttendanceUser[], sessions: AttendanceSession[]) {
-  const checkedIds = new Set(sessions.map((session) => session.userId));
-  const workingIds = new Set(sessions.filter((session) => !session.checkOut).map((session) => session.userId));
+  const countedSessions = sessions.filter(isAttendanceCounted);
+  const checkedIds = new Set(countedSessions.map((session) => session.userId));
+  const workingIds = new Set(countedSessions.filter((session) => !session.checkOut).map((session) => session.userId));
   const total = users.length;
   const checked = users.filter((user) => checkedIds.has(user.id)).length;
   const working = users.filter((user) => workingIds.has(user.id)).length;

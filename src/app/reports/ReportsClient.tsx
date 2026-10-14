@@ -13,6 +13,7 @@ import {
 import type { Analytics } from "@/lib/analytics";
 import type { PublicUser } from "@/lib/auth";
 import PerformanceChart from "@/components/dashboard/PerformanceChart";
+import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { leadSourceLabel } from "@/lib/lead-display";
 
@@ -163,11 +164,37 @@ function Mini({ label, value }: { label: string; value: string }) { return <div 
 function Insight({ icon: Icon, title, value, note, color }: { icon: LucideIcon; title: string; value: string; note: string; color: string }) { return <article className={`${card} flex gap-3 p-4`}><span className={`grid size-10 shrink-0 place-items-center rounded-xl ${tones[color]}`}><Icon className="size-5" /></span><div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{title}</p><b className="mt-1 block truncate text-sm text-slate-950">{value}</b><p className="mt-1 text-[10px] leading-4 text-slate-500">{note}</p></div></article>; }
 
 function AdminPerformance({ data }: { data: Analytics }) {
-
- const paging=useListPagination(data.sales);
-  return <section className={`${card} overflow-hidden`}><div className="flex flex-col gap-2 border-b p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5"><SectionTitle icon={Medal} title="Bảng hiệu suất nhân viên" note="Xếp theo đơn hoàn thành, tiền đã thu và số cuộc gọi" /><span className="text-[10px] text-slate-400">{data.sales.length} nhân viên trong phạm vi</span></div><div className="overflow-x-auto"><table className="w-full min-w-[1100px] text-left text-xs"><thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500"><tr>{["# / Nhân viên", "ITY", "Lead", "Đơn", "Hoàn thành", "Chuyển đổi", "Đã thu", "Giờ làm", "KPI MXH", "Quá hạn"].map((label) => <th key={label} className="px-4 py-3 font-semibold">{label}</th>)}</tr></thead><tbody>{paging.items.map((person, index) => <tr key={person.id} className="border-t transition hover:bg-blue-50/30"><td className="px-4 py-3"><div className="flex items-center gap-3"><span className={`grid size-7 place-items-center rounded-lg text-[10px] font-bold ${index + paging.offset === 0 ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"}`}>{index + paging.offset + 1}</span><div><b className="text-slate-900">{person.name}</b><p className="mt-0.5 text-[9px] text-slate-400">{person.extension ? `Ext. ${person.extension}` : "Chưa gán máy lẻ"}</p></div></div></td><td className="px-4 py-3"><b>{person.calls}</b><p className="text-[9px] text-slate-400">{person.answerRate}% nghe máy</p></td><td className="px-4 py-3"><b>{person.leads}</b><p className="text-[9px] text-slate-400">{person.interestedLeads} có nhu cầu</p></td><td className="px-4 py-3">{person.orders}</td><td className="px-4 py-3 font-bold text-emerald-600">{person.completed}</td><td className="px-4 py-3"><Rate value={person.conversionRate} /></td><td className="px-4 py-3 font-semibold">{money(person.collectedByCurrency, true)}</td><td className="px-4 py-3">{hours(person.workMinutes)}</td><td className="px-4 py-3"><b>{person.metSocialSessions}/{person.attendanceSessions} ca</b><p className="text-[9px] text-slate-400">{person.socialLeads} khách mới</p></td><td className="px-4 py-3"><span className={person.overdue ? "font-bold text-rose-600" : "text-emerald-600"}>{person.overdue}</span></td></tr>)}</tbody></table>{!data.sales.length && <Empty text="Không có nhân viên trong phạm vi đã chọn." />}</div>{paging.controls}</section>;
+  const chartData = data.sales.map((person) => ({
+    name: person.name.length > 16 ? `${person.name.slice(0, 15)}…` : person.name,
+    calls: person.calls,
+    leads: person.leads,
+    orders: person.orders,
+    completed: person.completed,
+    socialLeads: person.socialLeads,
+  }));
+  return <section className={`${card} overflow-hidden`}>
+    <div className="flex flex-col gap-2 border-b p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5">
+      <SectionTitle icon={Medal} title="Biểu đồ hiệu suất nhân viên" note="So sánh cuộc gọi, lead, đơn hàng và khách từ MXH trong kỳ" />
+      <span className="text-[10px] text-slate-400">{data.sales.length} nhân viên trong phạm vi</span>
+    </div>
+    {chartData.length ? <div className="h-[380px] w-full p-4 sm:p-6">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData} margin={{ top: 10, right: 12, left: 0, bottom: 34 }} barGap={4}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+          <XAxis dataKey="name" angle={-18} textAnchor="end" height={55} tick={{ fontSize: 11, fill: "#64748b" }} />
+          <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#64748b" }} />
+          <Tooltip cursor={{ fill: "#f8fafc" }} contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12 }} />
+          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Bar dataKey="calls" name="Cuộc gọi ITY" fill="#2563eb" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="leads" name="Lead" fill="#06b6d4" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="orders" name="Đơn hàng" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="completed" name="Đơn hoàn thành" fill="#10b981" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="socialLeads" name="Khách từ MXH" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div> : <Empty text="Không có nhân viên trong phạm vi đã chọn." />}
+  </section>;
 }
-
 function PersonalPerformance({ person }: { person: Analytics["sales"][number] | undefined }) {
   if (!person) return <Empty text="Chưa có dữ liệu hiệu suất trong kỳ này." />;
   const groups = [

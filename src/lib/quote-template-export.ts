@@ -4,6 +4,8 @@ export type QuoteTemplateLine = {
   name?: string;
   loadPort?: string;
   dischargePort?: string;
+  line?: string;
+  validUntil?: string;
   unit?: string;
   price?: number;
   quantity?: number;
@@ -75,6 +77,13 @@ const patchNumber = (xml: string, ref: string, value: number) => replaceCell(xml
 const patchFormula = (xml: string, ref: string, formula: string) => replaceCell(xml, ref, formulaCell(ref, cellStyle(xml, ref), formula));
 
 const formatDate = (date = new Date()) => `${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(2, "0")}/${date.getFullYear()}`;
+const formatValidity = (value: unknown) => {
+  const raw = String(value ?? "").trim();
+  const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return raw;
+  const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+  return `${match[3]}.${months[Number(match[2]) - 1] || match[2]}`;
+};
 
 export async function exportQuoteTemplate({
   template,
@@ -126,7 +135,8 @@ export async function exportQuoteTemplate({
       xml = patchNumber(xml, `E${row}`, price);
       xml = patchFormula(xml, `G${row}`, `E${row}*C${row}`);
       xml = fixedVnd > 0 ? patchNumber(xml, `H${row}`, fixedVnd) : patchFormula(xml, `H${row}`, `G${row}*${Math.max(1, Number(exchangeRate || 26600))}`);
-      xml = patchText(xml, `I${row}`, line.note || "");
+      xml = patchText(xml, `I${row}`, line.category === "FREIGHT" ? (line.line || "") : (line.note || ""));
+      xml = patchText(xml, `J${row}`, line.category === "FREIGHT" ? formatValidity(line.validUntil) : "");
     });
   }
   xml = patchFormula(xml, `G${layout.total}`, `SUM(G${Math.min(...Object.values(groups).flat())}:G${Math.max(...Object.values(groups).flat())})`);

@@ -13,7 +13,7 @@ describe("exportQuoteTemplate", () => {
       company: "Công ty mẫu",
       attention: "Nguyễn Văn A",
       exchangeRate: 26000,
-      lines: [{ category: "FREIGHT", name: "Cước biển", unit: "CBM", quantity: 2, price: 100, note: "7 ngày" }],
+      lines: [{ category: "FREIGHT", name: "Cước biển", loadPort: "Shanghai, China", dischargePort: "Hải Phòng, Việt Nam", line: "HPL", validUntil: "2026-10-15", unit: "CBM", quantity: 2, price: 100, note: "7 ngày" }],
     });
     const originalZip = await JSZip.loadAsync(source);
     const outputZip = await JSZip.loadAsync(output);
@@ -21,9 +21,11 @@ describe("exportQuoteTemplate", () => {
     expect(fileNames(outputZip).sort()).toEqual(fileNames(originalZip).sort());
     const sheet = await outputZip.file("xl/worksheets/sheet1.xml")!.async("string");
     expect(sheet).toContain("Công ty mẫu");
-    expect(sheet).toContain("Cước biển");
+    expect(sheet).toContain("Shanghai, China");
     expect(sheet).toContain("E18*C18");
     expect(sheet).toContain("G18*26000");
+    expect(sheet).toContain("HPL");
+    expect(sheet).toContain("15.OCT");
   });
 
   it("rejects more rows than the selected template can display", async () => {

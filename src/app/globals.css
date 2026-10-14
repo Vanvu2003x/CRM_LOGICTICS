@@ -15,6 +15,10 @@
 .quote-comparison-frame > div > div:first-child { display: none; }
 .quote-form-layout .md\:hidden { display: block !important; }
 .quote-form-layout .hidden.overflow-x-auto.rounded-xl.border { display: none !important; }
+.quote-form-layout > .grid.gap-2.sm\:grid-cols-3 { display: none !important; }
+.quote-form-layout button.border-amber-200,
+.quote-form-layout button.border-emerald-200 { display: none !important; }
+.quote-form-layout > div.flex.flex-col.gap-3.rounded-xl.bg-slate-50.p-4 > div.flex.flex-wrap.gap-2 > button { display: none !important; }
 
 /* Compact operational table: retain every column without widening to content. */
 .crm-shell main .crm-leads-table {

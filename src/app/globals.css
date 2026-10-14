@@ -326,8 +326,10 @@
 .crm-sidebar[data-theme="navy"] .text-blue-50,
 .crm-sidebar[data-theme="navy"] .text-blue-100 { color: #64748b; }
 .crm-sidebar[data-theme="navy"] .text-white { color: #0f172a; }
+.crm-sidebar[data-theme="navy"] .text-slate-300,
 .crm-sidebar[data-theme="navy"] .text-slate-400,
-.crm-sidebar[data-theme="navy"] .text-slate-500 { color: #64748b; }
+.crm-sidebar[data-theme="navy"] .text-slate-500,
+.crm-sidebar[data-theme="navy"] .text-slate-600 { color: #0f172a; }
 .crm-sidebar[data-theme="navy"] .bg-slate-900,
 .crm-sidebar[data-theme="navy"] .bg-slate-800 { background-color: #f8fafc; }
 .crm-sidebar[data-theme="navy"] a[aria-current="page"],

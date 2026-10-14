@@ -3,7 +3,6 @@ import { useSyncExternalStore } from "react";
 export const themes = [
   { id: "navy", name: "Navy", color: "#174d91" },
   { id: "ocean", name: "Ocean", color: "#0d9488" },
-  { id: "dark", name: "Dark", color: "#08111f" },
 ] as const;
 export type ThemeId = (typeof themes)[number]["id"];
 const themeKey = "crm-theme";
@@ -12,9 +11,9 @@ let fallback: ThemeId = "navy";
 function getTheme(): ThemeId {
   try {
     const saved = localStorage.getItem(themeKey);
-    if (saved === "light") {
-      localStorage.setItem(themeKey, "dark");
-      return "dark";
+    if (saved === "light" || saved === "dark") {
+      localStorage.setItem(themeKey, fallback);
+      return fallback;
     }
     return themes.find((theme) => theme.id === saved)?.id ?? fallback;
   } catch { return fallback; }

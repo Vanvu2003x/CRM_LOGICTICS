@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { Header } from "./Header";
 import { useCRMTheme } from "./themes";
@@ -12,11 +12,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [theme, setTheme] = useCRMTheme();
   const pathname = usePathname();
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    return () => document.documentElement.classList.remove("dark");
-  }, [theme]);
 
   if (pathname === "/login") {
     return (

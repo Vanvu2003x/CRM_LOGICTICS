@@ -63,7 +63,7 @@ export function Header({ collapsed, onToggleSidebar, theme, onThemeChange }: { c
           <DialogContent className="sm:max-w-md">
             <DialogTitle>Giao diện CRM</DialogTitle>
             <DialogDescription>Chọn màu bạn thích. Lựa chọn được lưu trên trình duyệt này.</DialogDescription>
-            <div className="grid grid-cols-3 gap-3">{themes.map((item) => <button key={item.id} type="button" aria-pressed={theme === item.id} onClick={() => { onThemeChange(item.id); setThemeOpen(false); }} className={`rounded-xl border p-2.5 text-left text-slate-900 transition hover:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-slate-100 ${theme === item.id ? "border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-950/70" : "border-slate-200 dark:border-slate-700 dark:bg-slate-900"}`}>
+            <div className="grid grid-cols-2 gap-3">{themes.map((item) => <button key={item.id} type="button" aria-pressed={theme === item.id} onClick={() => { onThemeChange(item.id); setThemeOpen(false); }} className={`rounded-xl border p-2.5 text-left text-slate-900 transition hover:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${theme === item.id ? "border-blue-500 bg-blue-50" : "border-slate-200"}`}>
               <span className="mb-3 flex h-16 items-end rounded-lg p-2" style={{ background: item.color }}><span className="h-7 w-3 rounded bg-white/40" /><span className="ml-1 h-7 flex-1 rounded bg-white/80" /></span>
               <span className="flex items-center justify-between text-xs font-medium">{item.name}{theme === item.id && <Check className="size-3.5 text-blue-600" />}</span>
             </button>)}</div>

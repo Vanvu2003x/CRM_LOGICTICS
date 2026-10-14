@@ -4,6 +4,7 @@ export type QuoteTemplateLine = {
   name?: string;
   loadPort?: string;
   dischargePort?: string;
+  groupName?: string;
   line?: string;
   validUntil?: string;
   unit?: string;
@@ -116,14 +117,27 @@ export async function exportQuoteTemplate({
     ORIGIN: layout.origin,
     VIETNAM: layout.vietnam,
   };
+  const categoryLines: Record<"FREIGHT" | "ORIGIN" | "VIETNAM", QuoteTemplateLine[]> = {
+    FREIGHT: lines.filter(line => (line.category || "FREIGHT") === "FREIGHT"),
+    ORIGIN: lines.filter(line => line.category === "ORIGIN"),
+    VIETNAM: lines.filter(line => line.category === "VIETNAM"),
+  };
+  if (categoryLines.ORIGIN.length && !groups.ORIGIN.length) {
+    categoryLines.VIETNAM = [...categoryLines.ORIGIN, ...categoryLines.VIETNAM];
+    categoryLines.ORIGIN = [];
+  } else if (categoryLines.ORIGIN.length > groups.ORIGIN.length) {
+    const overflow = categoryLines.ORIGIN.slice(groups.ORIGIN.length);
+    categoryLines.ORIGIN = categoryLines.ORIGIN.slice(0, groups.ORIGIN.length);
+    categoryLines.VIETNAM = [...overflow, ...categoryLines.VIETNAM];
+  }
   for (const category of Object.keys(groups) as Array<keyof typeof groups>) {
-    const categoryLines = lines.filter(line => (line.category || "FREIGHT") === category);
+    const linesForCategory = categoryLines[category];
     const rows = groups[category];
-    if (categoryLines.length > rows.length) throw new Error(`Mẫu ${selectedSheet} chỉ hỗ trợ tối đa ${rows.length} dòng cho ${category}.`);
+    if (linesForCategory.length > rows.length) throw new Error(`Mẫu ${selectedSheet} chỉ hỗ trợ tối đa ${rows.length} dòng cho ${category}.`);
     for (const row of rows) {
       for (const column of ["A", "B", "C", "D", "E", "G", "H", "I", "J"]) xml = clearCell(xml, `${column}${row}`);
     }
-    categoryLines.forEach((line, index) => {
+    linesForCategory.forEach((line, index) => {
       const row = rows[index];
       const quantity = Number(line.quantity || 0);
       const price = Number(line.price || 0);

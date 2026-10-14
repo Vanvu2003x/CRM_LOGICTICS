@@ -39,4 +39,20 @@ describe("exportQuoteTemplate", () => {
       lines: Array.from({ length: 8 }, (_, index) => ({ category: "VIETNAM" as const, name: `Phí ${index}`, unit: "Lô", quantity: 1, price: 1 })),
     })).rejects.toThrow("CIF chỉ hỗ trợ tối đa 7 dòng");
   });
+
+  it("places custom fee groups into the available FOB fee area", async () => {
+    const source = await readFile(join(process.cwd(), "public/templates/bao-gia-nhap-khau-lcl.xlsx"));
+    const output = await exportQuoteTemplate({
+      template: source,
+      incoterm: "FOB",
+      company: "Công ty FOB",
+      attention: "Nguyễn Văn B",
+      exchangeRate: 26000,
+      lines: [{ category: "ORIGIN", groupName: "Phí local tự tạo", name: "Phí nâng hạ", unit: "Lô", quantity: 1, price: 25 }],
+    });
+    const zip = await JSZip.loadAsync(output);
+    const sheet = await zip.file("xl/worksheets/sheet2.xml")!.async("string");
+    expect(sheet).toContain("Phí nâng hạ");
+    expect(sheet).toContain("E21*C21");
+  });
 });

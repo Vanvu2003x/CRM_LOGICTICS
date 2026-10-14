@@ -100,8 +100,6 @@ export default function CampaignPlanBoard({ products, campaigns, users, isAdmin,
   ];
 
   return <div className="space-y-4">
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{cards.map(card => <article key={card.label} className="flex items-center gap-3 rounded-xl border bg-white p-3 shadow-sm"><span className={`grid size-10 place-items-center rounded-lg ${card.color}`}><card.icon className="size-5" /></span><div><p className="text-xs text-slate-500">{card.label}</p><p className="text-xl font-bold text-slate-950">{card.value}</p></div></article>)}</div>
-
     <div className="flex flex-col gap-2 rounded-xl border bg-white p-3 lg:flex-row lg:flex-wrap">
       <label className="relative min-w-0 flex-1"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" /><input aria-label="Tìm nội dung" value={query} onChange={e => {setQuery(e.target.value);}} placeholder="Tìm nội dung, chiến dịch, nhân viên..." className={`${input} w-full pl-9`} /></label>
       <select aria-label="Lọc chiến dịch" className={input} value={campaignId} onChange={e => {setCampaignId(e.target.value);}}><option value="ALL">Tất cả chiến dịch</option>{campaigns.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
@@ -113,6 +111,8 @@ export default function CampaignPlanBoard({ products, campaigns, users, isAdmin,
       <select aria-label="Lọc loại nhiệm vụ kế hoạch" className={input} value={kind} onChange={e=>{setKind(e.target.value);}}><option value="ALL">Nhiệm vụ & bài phạt</option><option value="NORMAL">Nhiệm vụ chính</option><option value="PENALTY">Bài phạt</option></select>
       <select aria-label="Lọc bước kế hoạch" className={input} value={step} onChange={e=>{setStep(e.target.value);}}><option value="ALL">Tất cả bước duyệt</option>{Object.entries(stepLabels).map(([value,label])=><option key={value} value={value}>{label}</option>)}</select>
     </div>
+
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{cards.map(card => <article key={card.label} className="flex items-center gap-3 rounded-xl border bg-white p-3 shadow-sm"><span className={`grid size-10 place-items-center rounded-lg ${card.color}`}><card.icon className="size-5" /></span><div><p className="text-xs text-slate-500">{card.label}</p><p className="text-xl font-bold text-slate-950">{card.value}</p></div></article>)}</div>
 
     <div className="hidden overflow-hidden rounded-xl border bg-white shadow-sm xl:block"><div className="overflow-x-auto"><table className="crm-campaign-table w-full table-fixed text-left"><thead className="bg-slate-900 text-slate-100"><tr>{[["Deadline","w-28"],["Nhân viên","w-28"],["Nội dung","w-28"],["Loại","w-24"],["YC thời lượng","w-24"],["Bằng chứng","w-32"],["Yêu cầu nội dung","w-48"],["Mục","w-20"],["Tiến độ","w-32"],["Thao tác","w-24"]].map(([label,width]) => <th key={label} className={`px-3 py-3 font-semibold ${width}`}>{label}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{paging.items.map(({ product, deadline, state }) => {
       const meta = statusMeta[state], link = safeLink(product.link), needsLink = product.step.includes("DRAFT") && !link, artifacts = campaignArtifacts(product.history);

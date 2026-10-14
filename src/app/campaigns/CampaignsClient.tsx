@@ -234,8 +234,7 @@ export default function CampaignsClient({ users, campaigns, products, nowIso }: 
       <Tabs value={tab} onValueChange={value=>{setTab(value);setPage(1);}} className="w-full">
         <TabsList className="mb-4 max-w-full justify-start overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <TabsTrigger value="campaigns">Chiến dịch <span className="ml-1 rounded-full bg-slate-100 px-1.5 text-[10px]">{filteredCampaigns.length}</span></TabsTrigger>
-          <TabsTrigger value="plan">Kế hoạch nội dung <span className="ml-1 rounded-full bg-slate-100 px-1.5 text-[10px]">{permittedProducts.length}</span></TabsTrigger>
-          <TabsTrigger value="tasks">Việc cần duyệt <span className="ml-1 rounded-full bg-slate-100 px-1.5 text-[10px]">{campaignOverview.submit+campaignOverview.review}</span></TabsTrigger>
+          <TabsTrigger value="plan">Chi tiết & phân công <span className="ml-1 rounded-full bg-slate-100 px-1.5 text-[10px]">{permittedProducts.length}</span></TabsTrigger>
         </TabsList>
         <TabsContent value="plan">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4"><div><p className="text-sm font-semibold text-slate-900">{campaigns.find(c=>c.id===selectedCampaignId)?.name||"Tất cả kế hoạch nội dung"}</p><p className="mt-1 text-sm text-slate-500">{isAdmin ? "Phân công, theo dõi deadline và duyệt sản phẩm trong cùng một bảng." : "Theo dõi deadline và trạng thái các nhiệm vụ của bạn."}</p></div>{isAdmin&&<AssignmentForm key={selectedCampaignId||"all"} campaigns={campaigns} users={users} selectedCampaignId={selectedCampaignId}/>}</div>

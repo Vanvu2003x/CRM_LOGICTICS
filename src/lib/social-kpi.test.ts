@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { socialKpiProgress, socialWinMetrics } from "./social-kpi";
+import { socialCustomerKpi, socialKpiProgress, socialWinMetrics } from "./social-kpi";
 
 describe("social KPI", () => {
-  it("requires three posts and five comments in each attendance session", () => {
+  it("reaches the social KPI with at least one qualified customer", () => {
+    expect(socialCustomerKpi([{ quality: "CONTENT", leadId: null }, { quality: "QUALIFIED", leadId: "lead-1" }])).toEqual({ customers: 1, reached: true });
+    expect(socialCustomerKpi([{ quality: "QUALIFIED", leadId: "lead-1" }, { quality: "QUALIFIED", leadId: "lead-1" }]).customers).toBe(1);
+  });
+  it("tracks posts and comments without limiting extra submissions", () => {
     const incomplete = socialKpiProgress([{ type: "POST" }, { type: "POST" }, ...Array.from({ length: 5 }, () => ({ type: "COMMENT" }))]);
     expect(incomplete).toMatchObject({ posts: 2, comments: 5, done: false, postPercent: 67, commentPercent: 100 });
     const complete = socialKpiProgress([...Array.from({ length: 3 }, () => ({ type: "POST" })), ...Array.from({ length: 5 }, () => ({ type: "COMMENT" }))]);
-    expect(complete.done).toBe(true);
+    expect(complete.done).toBe(false);
+    expect(socialKpiProgress([...Array.from({ length: 3 }, () => ({ type: "POST" })), ...Array.from({ length: 5 }, () => ({ type: "COMMENT" })), { type: "COMMENT", quality: "QUALIFIED", leadId: "lead-1" }]).done).toBe(true);
   });
 
   it("counts quality and wins from linked orders", () => {

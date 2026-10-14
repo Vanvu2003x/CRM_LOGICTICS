@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attendanceStatus, attendanceSummary, automaticCheckoutAt, canStartAttendanceSession, filterAttendanceRows, monthlyAttendanceSummary, shouldAutoCloseAttendance } from "./attendance";
+import { attendanceCallKpi, attendanceStatus, attendanceSummary, automaticCheckoutAt, canStartAttendanceSession, filterAttendanceRows, monthlyAttendanceSummary, shouldAutoCloseAttendance } from "./attendance";
 
 const users = [
   { id: "u1", name: "Admin Quản Lý", role: "ADMIN", extension: "90933001", teamId: null },
@@ -13,6 +13,10 @@ const sessions = [
 ];
 
 describe("attendance dashboard", () => {
+  it("calculates the 40-call KPI and warns below target", () => {
+    expect(attendanceCallKpi(12)).toEqual({ calls: 12, target: 40, percent: 30, reached: false, warning: true });
+    expect(attendanceCallKpi(40).reached).toBe(true);
+  });
   it("distinguishes completed, working, and missing employees", () => {
     expect(attendanceStatus(sessions.filter((item) => item.userId === "u1"))).toBe("DONE");
     expect(attendanceStatus(sessions.filter((item) => item.userId === "u2"))).toBe("WORKING");

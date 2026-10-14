@@ -1,4 +1,11 @@
 export type AttendanceStatus = "MISSING" | "WORKING" | "DONE";
+export const ATTENDANCE_CALL_TARGET = 40;
+
+export function attendanceCallKpi(callCount: number, target = ATTENDANCE_CALL_TARGET) {
+  const calls = Math.max(0, Math.floor(callCount));
+  const safeTarget = Math.max(1, target);
+  return { calls, target: safeTarget, percent: Math.min(100, Math.round((calls / safeTarget) * 100)), reached: calls >= safeTarget, warning: calls < safeTarget };
+}
 
 export type AttendanceUser = {
   id: string;

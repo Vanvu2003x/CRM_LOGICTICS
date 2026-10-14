@@ -17,7 +17,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
   const range = periodBounds(employeeView ? today : selectedDate, employeeView ? "month" : "day");
   const dayFilter = { OR: [{ date: { gte: range.start, lt: range.end } }, { checkIn: { gte: range.start, lt: range.end } }] };
 
-  const [users, attendances] = await Promise.all([
+  const [users, attendances, calls] = await Promise.all([
     db.user.findMany({
       where: ids ? { id: { in: ids } } : {},
       select: publicUserSelect,
@@ -30,7 +30,15 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
       },
       orderBy: { checkIn: "asc" },
     }),
+    db.callLog.findMany({
+      where: { ...(ids ? { salesId: { in: ids } } : {}), startedAt: { gte: range.start, lt: range.end } },
+      select: { salesId: true },
+    }),
   ]);
+  const callCounts = calls.reduce<Record<string, number>>((result, call) => {
+    if (call.salesId) result[call.salesId] = (result[call.salesId] || 0) + 1;
+    return result;
+  }, {});
 
   if (employeeView) return (
     <EmployeeAttendanceClient
@@ -45,6 +53,7 @@ export default async function AttendancePage({ searchParams }: { searchParams: P
       activeUser={activeUser}
       users={users}
       initialAttendances={attendances}
+      callCounts={callCounts}
       selectedDate={selectedDate}
       today={today}
     />

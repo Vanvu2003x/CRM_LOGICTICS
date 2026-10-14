@@ -1,0 +1,5 @@
+- [ ] KPI helper tests
+- [ ] Attendance query/UI
+- [ ] Social KPI rule/UI
+- [ ] Campaign assignment/detail cleanup
+- [ ] Local test, lint, build

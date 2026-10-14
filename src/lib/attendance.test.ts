@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attendanceCallKpi, attendanceStatus, attendanceSummary, automaticCheckoutAt, canStartAttendanceSession, filterAttendanceRows, monthlyAttendanceSummary, shouldAutoCloseAttendance } from "./attendance";
+import { attendanceCallKpi, attendanceStatus, attendanceSummary, automaticCheckoutAt, canStartAttendanceSession, filterAttendanceRows, isRealItyCall, monthlyAttendanceSummary, shouldAutoCloseAttendance } from "./attendance";
 
 const users = [
   { id: "u1", name: "Admin Quản Lý", role: "ADMIN", extension: "90933001", teamId: null },
@@ -13,6 +13,11 @@ const sessions = [
 ];
 
 describe("attendance dashboard", () => {
+  it("excludes demo calls from the real ITY KPI", () => {
+    expect(isRealItyCall({ callid: "demo-123" })).toBe(false);
+    expect(isRealItyCall({ callid: "ity-123" })).toBe(true);
+    expect(isRealItyCall({ callid: null })).toBe(false);
+  });
   it("calculates the 40-call KPI and warns below target", () => {
     expect(attendanceCallKpi(12)).toEqual({ calls: 12, target: 40, percent: 30, reached: false, warning: true });
     expect(attendanceCallKpi(40).reached).toBe(true);

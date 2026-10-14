@@ -1,6 +1,10 @@
 export type AttendanceStatus = "MISSING" | "WORKING" | "DONE";
 export const ATTENDANCE_CALL_TARGET = 40;
 
+export function isRealItyCall(call: { callid?: string | null }) {
+  return Boolean(call.callid && !call.callid.startsWith("demo-"));
+}
+
 export function attendanceCallKpi(callCount: number, target = ATTENDANCE_CALL_TARGET) {
   const calls = Math.max(0, Math.floor(callCount));
   const safeTarget = Math.max(1, target);

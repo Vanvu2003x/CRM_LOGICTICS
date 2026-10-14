@@ -2,7 +2,7 @@
 import { db } from "@/lib/db";
 import { requireUser,assertOwner } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import { automaticCheckoutAt, shouldAutoCloseAttendance } from "@/lib/attendance";
+import { ATTENDANCE_CALL_TARGET, automaticCheckoutAt, shouldAutoCloseAttendance } from "@/lib/attendance";
 type GeoInput={latitude:number;longitude:number;accuracy:number};
 function validGeo(value:GeoInput|undefined){
  if(!value)return undefined;
@@ -27,6 +27,8 @@ export async function checkOut(id:string,location?:GeoInput) {
  try {const user=await requireUser();const attendance=await db.attendance.findUnique({where:{id}});
  if(!attendance || attendance.checkOut) throw new Error("Ca không tồn tại hoặc đã kết thúc.");
  await assertOwner(user,attendance.userId);
+ const realCallCount=await db.callLog.count({where:{salesId:attendance.userId,callid:{not:{startsWith:"demo-"}},startedAt:{gte:attendance.checkIn,lte:new Date()}}});
+ if(realCallCount<ATTENDANCE_CALL_TARGET) throw new Error(`Hôm nay mới có ${realCallCount}/${ATTENDANCE_CALL_TARGET} cuộc gọi ITY thật. Chưa đủ KPI nên chưa thể kết thúc ca.`);
  const geo=validGeo(location);
  await db.attendance.update({where:{id},data:{checkOut:new Date(),closeType:"MANUAL",...(geo?{checkOutLatitude:geo.latitude,checkOutLongitude:geo.longitude,checkOutAccuracy:geo.accuracy}:{})}});
  revalidatePath("/attendance");revalidatePath("/social-kpi");return {success:true};

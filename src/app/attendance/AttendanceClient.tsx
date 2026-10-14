@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
+  ATTENDANCE_CALL_TARGET,
   attendanceMinutes,
   attendanceCallKpi,
   attendanceSummary,
@@ -150,12 +151,12 @@ function Avatar({ user }: { user: PublicUser }) {
   return <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-700 ring-1 ring-blue-100">{initials}</span>;
 }
 
-function AttendanceAction({ row, activeUser, isToday, loading, onAction }: ActionProps) {
+function AttendanceAction({ row, callCount, activeUser, isToday, loading, onAction }: ActionProps) {
   const open = row.sessions.find((session) => !session.checkOut);
   const allowed = isToday && (activeUser.role === "ADMIN" || activeUser.id === row.user.id);
   if (!allowed) return <span className="text-xs text-slate-400">Chỉ xem</span>;
   return open
-    ? <Button size="sm" variant="outline" disabled={loading} onClick={() => onAction(row.user.id, open.id)} className="border-rose-200 text-rose-600 hover:bg-rose-50"><LogOut className="size-3.5" />{loading ? "Đang lưu..." : "Kết thúc ca"}</Button>
+    ? <Button size="sm" variant="outline" disabled={loading} onClick={() => { if (callCount < ATTENDANCE_CALL_TARGET) { window.alert(`Hôm nay mới có ${callCount}/${ATTENDANCE_CALL_TARGET} cuộc gọi ITY thật. Chưa đủ KPI nên chưa thể kết thúc ca.`); return; } onAction(row.user.id, open.id); }} className="border-rose-200 text-rose-600 hover:bg-rose-50"><LogOut className="size-3.5" />{loading ? "Đang lưu..." : "Kết thúc ca"}</Button>
     : <Button size="sm" disabled={loading} onClick={() => onAction(row.user.id)} className="bg-emerald-600 text-white hover:bg-emerald-700"><LogIn className="size-3.5" />{loading ? "Đang lưu..." : row.sessions.length ? "Ca tiếp theo" : "Chấm công"}</Button>;
 }
 

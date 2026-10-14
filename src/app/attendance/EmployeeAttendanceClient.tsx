@@ -20,6 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
+  ATTENDANCE_CALL_TARGET,
   attendanceDay,
   attendanceMinutes,
   canStartAttendanceSession,
@@ -29,7 +30,7 @@ import {
 } from "@/lib/attendance";
 import { checkIn, checkOut } from "./actions";
 
-type Props = { activeUser: PublicUser; initialAttendances: Attendance[]; today: string };
+type Props = { activeUser: PublicUser; initialAttendances: Attendance[]; today: string; callCount: number };
 type Geo = { latitude: number; longitude: number; accuracy: number };
 
 const time = (value: Date | string | null) => value ? new Date(value).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" }) : "--:--";
@@ -44,7 +45,7 @@ function sessionStatus(session: Attendance) {
   return { label: "Đúng giờ", style: "bg-emerald-50 text-emerald-700" };
 }
 
-export default function EmployeeAttendanceClient({ activeUser, initialAttendances, today }: Props) {
+export default function EmployeeAttendanceClient({ activeUser, initialAttendances, today, callCount }: Props) {
   const router = useRouter();
   const { toast } = useToast();
   const historyRef = useRef<HTMLElement>(null);
@@ -84,6 +85,10 @@ export default function EmployeeAttendanceClient({ activeUser, initialAttendance
 
   const paging=useListPagination(filteredHistory,historyStatus+today);
   async function record(kind: "IN" | "OUT") {
+    if (kind === "OUT" && callCount < ATTENDANCE_CALL_TARGET) {
+      window.alert(`Hôm nay mới có ${callCount}/${ATTENDANCE_CALL_TARGET} cuộc gọi ITY thật. Chưa đủ KPI nên chưa thể kết thúc ca.`);
+      return;
+    }
     setLoading(true);
     const result = kind === "IN" ? await checkIn(activeUser.id, geo ?? undefined) : await checkOut(openSession!.id, geo ?? undefined);
     setLoading(false);
@@ -133,7 +138,7 @@ export default function EmployeeAttendanceClient({ activeUser, initialAttendance
 
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="grid grid-cols-2 border-b bg-slate-50"><button onClick={() => setTab("CLOCK")} className={`h-11 text-xs font-semibold ${tab === "CLOCK" ? "border-b-2 border-blue-600 bg-white text-blue-900" : "text-slate-500"}`}>Chấm công</button><button onClick={() => setTab("OVERVIEW")} className={`h-11 text-xs font-semibold ${tab === "OVERVIEW" ? "border-b-2 border-blue-600 bg-white text-blue-900" : "text-slate-500"}`}>Tổng quan</button></div>
-        {tab === "CLOCK" ? <div className="space-y-3 p-5"><Button disabled={!canStartSession || loading} onClick={() => void record("IN")} className="h-16 w-full bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-70"><LogIn className="size-5" /><span>{openSession ? <>Đang làm việc<br /><b>{time(openSession.checkIn)}</b></> : todaySessions.length ? "Bắt đầu ca mới" : "Chấm công vào"}</span></Button><Button disabled={!openSession || loading} onClick={() => void record("OUT")} variant="outline" className="h-14 w-full"><LogOut className="size-5" />{loading ? "Đang ghi nhận..." : openSession ? "Chấm công ra" : "Chưa có ca đang mở"}</Button><p className="pt-1 text-xs leading-5 text-slate-500">{openSession ? `Bạn đã bắt đầu ca lúc ${time(openSession.checkIn)}. Hãy chấm công ra khi kết thúc ca.` : todaySessions.length ? "Ca trước đã kết thúc. Bạn có thể bắt đầu ca làm tiếp theo." : "Hãy bật quyền vị trí và chấm công khi bắt đầu ca làm việc."}</p></div> : <div className="space-y-3 p-5 text-xs leading-5 text-slate-600"><p><b>Giờ làm việc:</b> 08:00–17:30.</p><p><b>Đi muộn:</b> chấm công sau 08:05.</p><p><b>Về sớm:</b> chấm công ra trước 17:00.</p><p>Có thể mở ca mới sau khi ca trước đã đóng. Vị trí GPS được ghi nhận để đối chiếu khi cần.</p></div>}
+        {tab === "CLOCK" ? <div className="space-y-3 p-5"><div className={`rounded-xl border px-3 py-2 text-sm font-semibold ${callCount >= ATTENDANCE_CALL_TARGET ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}>Cuộc gọi ITY thật hôm nay: {callCount}/{ATTENDANCE_CALL_TARGET}{callCount < ATTENDANCE_CALL_TARGET && <span className="ml-1 font-normal">· Chưa đủ để kết thúc ca</span>}</div><Button disabled={!canStartSession || loading} onClick={() => void record("IN")} className="h-16 w-full bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-70"><LogIn className="size-5" /><span>{openSession ? <>Đang làm việc<br /><b>{time(openSession.checkIn)}</b></> : todaySessions.length ? "Bắt đầu ca mới" : "Chấm công vào"}</span></Button><Button disabled={!openSession || loading} onClick={() => void record("OUT")} variant="outline" className="h-14 w-full"><LogOut className="size-5" />{loading ? "Đang ghi nhận..." : openSession ? "Chấm công ra" : "Chưa có ca đang mở"}</Button><p className="pt-1 text-xs leading-5 text-slate-500">{openSession ? `Bạn đã bắt đầu ca lúc ${time(openSession.checkIn)}. Hãy chấm công ra khi kết thúc ca.` : todaySessions.length ? "Ca trước đã kết thúc. Bạn có thể bắt đầu ca làm tiếp theo." : "Hãy bật quyền vị trí và chấm công khi bắt đầu ca làm việc."}</p></div> : <div className="space-y-3 p-5 text-xs leading-5 text-slate-600"><p><b>Giờ làm việc:</b> 08:00–17:30.</p><p><b>Đi muộn:</b> chấm công sau 08:05.</p><p><b>Về sớm:</b> chấm công ra trước 17:00.</p><p>Có thể mở ca mới sau khi ca trước đã đóng. Vị trí GPS được ghi nhận để đối chiếu khi cần.</p></div>}
       </section>
     </div>
 

@@ -30,10 +30,14 @@ export async function scopedData(user: PublicUser) {
       salesId: lead.salesId, createdAt: lead.createdAt.toISOString(), followUpAt: lead.followUpAt?.toISOString() || null,
       history: readJson<unknown[]>(lead.contactHistory, []), originRef: lead.originRef, callOutcome: lead.callOutcome,
     })),
-    orders: orders.map((order) => ({
-      ...(() => { const transport = readJson<SavedSteps>(order.stepsData, {})[6] || {}; return { etd: typeof transport.etd === "string" ? transport.etd : null, eta: typeof transport.eta === "string" ? transport.eta : null }; })(),
+    orders: orders.map((order) => {
+      const saved = readJson<SavedSteps>(order.stepsData, {});
+      const transport = saved[6] || {};
+      const savedCompany = typeof saved[2]?.company === "string" ? saved[2].company : null;
+      return {
       id: order.code, publicCode: order.publicCode, dbId: order.id, customer: order.customerName || order.lead?.company || order.lead?.name || order.code,
-      customerName: order.lead?.name || order.customerName || null, company: order.lead?.company || null,
+      customerName: order.lead?.name || order.customerName || null, company: order.lead?.company || savedCompany,
+      etd: typeof transport.etd === "string" ? transport.etd : null, eta: typeof transport.eta === "string" ? transport.eta : null,
       step: order.currentStep, type: order.type === "IMPORT" ? "IMPORT" as const : "EXPORT" as const,
       date: order.createdAt.toISOString().slice(0, 10), sales: order.sales.name, salesId: order.salesId,
       exportPort: order.exportPort, importPort: order.importPort, expectedDate: order.expectedDate?.toISOString() || null, quantity: order.quantity, incoterms: order.incoterms,
@@ -46,7 +50,8 @@ export async function scopedData(user: PublicUser) {
       invoiceIssuedAt: order.invoiceIssuedAt?.toISOString()||null,
       files: order.files.map((file) => ({ id: file.id, filename: file.filename, step: file.step, kind: file.kind })),
       source: order.lead?.source || "", originRef: order.lead?.originRef || null,
-    })),
+      };
+    }),
     agents, activities: activities.map((item) => ({ id: item.id, at: item.createdAt.toISOString(), text: item.text, href: item.href })),
     calls: calls.map((call) => ({ ...call, startedAt: call.startedAt.toISOString(), createdAt: call.createdAt.toISOString() })), users,reminders:reminders.map(r=>({...r,dueAt:r.dueAt.toISOString()})),
     dataRequests:dataRequests.map(item=>({id:item.id,userId:item.userId,userName:item.user.name,status:item.status,note:item.note,requestedAt:item.requestedAt.toISOString(),resolvedAt:item.resolvedAt?.toISOString()||null})),

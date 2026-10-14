@@ -30,6 +30,7 @@ const layouts: Record<string, SheetLayout> = {
 };
 
 const sheetIndex: Record<string, number> = { FCA: 1, FOB: 2, EXW: 3, CIF: 4 };
+const feeSectionHeaderRows: Record<string, number[]> = { FCA: [20, 26], FOB: [20], EXW: [20, 27], CIF: [16] };
 
 const escapeXml = (value: unknown) => String(value ?? "")
   .replace(/&/g, "&amp;")
@@ -111,6 +112,8 @@ export async function exportQuoteTemplate({
   xml = patchText(xml, "A8", `Ngày báo giá: ${formatDate()}`);
   xml = patchText(xml, "C10", attention || company);
   xml = patchText(xml, "C11", company);
+  xml = patchText(xml, "A13", `LP xin được gửi lời chào trân trọng tới ${attention || "Quý khách hàng"} và ${company || "Quý Công ty"}`);
+  xml = patchText(xml, "A14", `Dựa trên các thông tin nhận được, chúng tôi xin được gửi tới ${attention || "Quý khách hàng"} và Quý Công ty báo giá dịch vụ như sau:`);
 
   const groups: Record<"FREIGHT" | "ORIGIN" | "VIETNAM", number[]> = {
     FREIGHT: layout.freight,
@@ -130,6 +133,14 @@ export async function exportQuoteTemplate({
     categoryLines.ORIGIN = categoryLines.ORIGIN.slice(0, groups.ORIGIN.length);
     categoryLines.VIETNAM = [...overflow, ...categoryLines.VIETNAM];
   }
+  const fallbackGroupNames = { ORIGIN: "Phí đầu nước ngoài", VIETNAM: "Phí tại Việt Nam" };
+  const groupNames = Array.from(new Set(lines.filter(line => line.category !== "FREIGHT").map(line => line.groupName || fallbackGroupNames[line.category as "ORIGIN" | "VIETNAM"]).filter(Boolean)));
+  const headerRows = feeSectionHeaderRows[selectedSheet] || [];
+  headerRows.forEach((row, index) => {
+    const name = groupNames[index];
+    if (name) xml = patchText(xml, `A${row}`, `${index + 2}, ${name}`);
+    else xml = clearCell(xml, `A${row}`);
+  });
   for (const category of Object.keys(groups) as Array<keyof typeof groups>) {
     const linesForCategory = categoryLines[category];
     const rows = groups[category];

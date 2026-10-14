@@ -33,7 +33,7 @@ export function Header({ collapsed, onToggleSidebar, theme, onThemeChange }: { c
   const openDataRequests = dataRequests.filter((item) => item.status === "OPEN");
 
   return (
-    <header data-theme={theme} className="crm-header relative z-20 flex h-20 shrink-0 items-center justify-between gap-3 border-b border-blue-400/40 bg-[#03172e] px-4 shadow-[0_4px_16px_rgba(15,23,42,0.12)] sm:px-6" style={{ backgroundImage: 'linear-gradient(90deg, var(--header-overlay) 15%, var(--header-center) 48%, var(--header-overlay) 80%), url("/images/logistics-header-v2.webp")', backgroundSize: "100% 100%, cover", backgroundPosition: "center, center 57%", backgroundRepeat: "no-repeat" }}>
+    <header data-theme={theme} className="crm-header relative z-20 flex h-20 shrink-0 items-center justify-between gap-3 border-b px-4 shadow-[0_4px_16px_rgba(15,23,42,0.08)] sm:px-6">
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-blue-500/20 via-cyan-300/70 to-blue-500/20" />
       <div className="relative flex min-w-0 items-center gap-3">
         <button type="button" onClick={onToggleSidebar} aria-label={collapsed ? "Mở rộng thanh điều hướng" : "Thu gọn thanh điều hướng"} aria-expanded={!collapsed} aria-controls="desktop-sidebar" title={collapsed ? "Mở rộng menu" : "Thu gọn menu"} className={`hidden size-10 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-blue-100 transition-colors hover:border-blue-300/60 hover:bg-white/20 hover:text-white lg:flex ${focusStyle}`}>

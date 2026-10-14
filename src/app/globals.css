@@ -13,6 +13,8 @@
 .quote-comparison-frame article:nth-child(4) { border-color: #fde68a; border-left-color: #d97706; }
 .quote-comparison-frame article:nth-child(5) { border-color: #fbcfe8; border-left-color: #db2777; }
 .quote-comparison-frame > div > div:first-child { display: none; }
+.quote-form-layout .md\:hidden { display: block !important; }
+.quote-form-layout .hidden.overflow-x-auto.rounded-xl.border { display: none !important; }
 
 /* Compact operational table: retain every column without widening to content. */
 .crm-shell main .crm-leads-table {

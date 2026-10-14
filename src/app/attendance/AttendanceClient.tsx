@@ -72,9 +72,9 @@ export default function AttendanceClient({ activeUser, users, initialAttendances
   const dateLabel = new Intl.DateTimeFormat("vi-VN", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Ho_Chi_Minh" })
     .format(new Date(`${selectedDate}T12:00:00+07:00`));
 
-  async function runAction(userId: string, attendanceId?: string) {
+  async function runAction(userId: string, attendanceId?: string, forceWithoutAttendance = false) {
     setLoadingUser(userId);
-    const result = attendanceId ? await checkOut(attendanceId) : await checkIn(userId);
+    const result = attendanceId ? await checkOut(attendanceId, undefined, forceWithoutAttendance) : await checkIn(userId);
     setLoadingUser(null);
     toast({
       title: result.success ? (attendanceId ? "Đã kết thúc ca" : "Chấm công thành công") : "Không thể chấm công",
@@ -144,7 +144,7 @@ function Metric({ icon: Icon, value, label, detail, tone }: { icon: typeof Clock
 }
 
 type Row = ReturnType<typeof filterAttendanceRows>[number];
-type ActionProps = { row: Row; callCount: number; activeUser: PublicUser; isToday: boolean; loading: boolean; onAction: (userId: string, attendanceId?: string) => void };
+type ActionProps = { row: Row; callCount: number; activeUser: PublicUser; isToday: boolean; loading: boolean; onAction: (userId: string, attendanceId?: string, forceWithoutAttendance?: boolean) => void };
 
 function Avatar({ user }: { user: PublicUser }) {
   const initials = user.name.split(" ").map((part) => part[0]).slice(-2).join("").toUpperCase();
@@ -156,7 +156,7 @@ function AttendanceAction({ row, callCount, activeUser, isToday, loading, onActi
   const allowed = isToday && (activeUser.role === "ADMIN" || activeUser.id === row.user.id);
   if (!allowed) return <span className="text-xs text-slate-400">Chỉ xem</span>;
   return open
-    ? <Button size="sm" variant="outline" disabled={loading} onClick={() => { if (callCount < ATTENDANCE_CALL_TARGET) { window.alert(`Hôm nay mới có ${callCount}/${ATTENDANCE_CALL_TARGET} cuộc gọi ITY thật. Chưa đủ KPI nên chưa thể kết thúc ca.`); return; } onAction(row.user.id, open.id); }} className="border-rose-200 text-rose-600 hover:bg-rose-50"><LogOut className="size-3.5" />{loading ? "Đang lưu..." : "Kết thúc ca"}</Button>
+    ? <Button size="sm" variant="outline" disabled={loading} onClick={() => { const forceWithoutAttendance = callCount < ATTENDANCE_CALL_TARGET; if (forceWithoutAttendance && !window.confirm(`Hôm nay mới có ${callCount}/${ATTENDANCE_CALL_TARGET} cuộc gọi ITY thật. Nếu vẫn đóng ca thì sẽ KHÔNG được tính công. Bạn vẫn muốn đóng ca không?`)) return; onAction(row.user.id, open.id, forceWithoutAttendance); }} className="border-rose-200 text-rose-600 hover:bg-rose-50"><LogOut className="size-3.5" />{loading ? "Đang lưu..." : "Kết thúc ca"}</Button>
     : <Button size="sm" disabled={loading} onClick={() => onAction(row.user.id)} className="bg-emerald-600 text-white hover:bg-emerald-700"><LogIn className="size-3.5" />{loading ? "Đang lưu..." : row.sessions.length ? "Ca tiếp theo" : "Chấm công"}</Button>;
 }
 

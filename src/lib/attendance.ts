@@ -24,11 +24,18 @@ export type AttendanceSession = {
   userId: string;
   checkIn: Date | string;
   checkOut: Date | string | null;
+  closeType?: string | null;
+  closeNote?: string | null;
 };
 
+export function isAttendanceCounted(session: AttendanceSession) {
+  return session.closeType !== "MANUAL_NOT_COUNTED";
+}
+
 export function attendanceStatus(sessions: AttendanceSession[]): AttendanceStatus {
-  if (sessions.some((session) => !session.checkOut)) return "WORKING";
-  return sessions.length ? "DONE" : "MISSING";
+  const counted = sessions.filter(isAttendanceCounted);
+  if (counted.some((session) => !session.checkOut)) return "WORKING";
+  return counted.length ? "DONE" : "MISSING";
 }
 
 export function canStartAttendanceSession(sessions: AttendanceSession[]) {
@@ -125,7 +132,7 @@ function elapsedWeekdays(month: string, today: string) {
 
 export function monthlyAttendanceSummary(sessions: AttendanceSession[], today: string) {
   const month = today.slice(0, 7);
-  const ownMonth = sessions.filter((session) => attendanceDay(session.checkIn).startsWith(month));
+  const ownMonth = sessions.filter((session) => isAttendanceCounted(session) && attendanceDay(session.checkIn).startsWith(month));
   const checkedDays = new Set(ownMonth.map((session) => attendanceDay(session.checkIn))).size;
   const lateDays = new Set(ownMonth.filter(isLateAttendance).map((session) => attendanceDay(session.checkIn))).size;
   const earlyDays = new Set(ownMonth.filter(isEarlyAttendance).map((session) => attendanceDay(session.checkIn))).size;

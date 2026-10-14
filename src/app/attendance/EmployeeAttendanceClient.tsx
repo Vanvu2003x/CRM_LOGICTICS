@@ -39,6 +39,7 @@ const duration = (minutes: number) => `${Math.floor(minutes / 60)}h ${String(min
 
 function sessionStatus(session: Attendance) {
   if (!session.checkOut) return { label: "Đang làm việc", style: "bg-emerald-50 text-emerald-700" };
+  if (session.closeType === "MANUAL_NOT_COUNTED") return { label: "Không tính công", style: "bg-rose-50 text-rose-600" };
   if (session.closeType === "AUTO_END_OF_DAY") return { label: "Hệ thống đóng ca", style: "bg-blue-50 text-blue-700" };
   if (isEarlyAttendance(session)) return { label: "Về sớm", style: "bg-rose-50 text-rose-600" };
   if (isLateAttendance(session)) return { label: "Đi muộn", style: "bg-amber-50 text-amber-700" };
@@ -84,15 +85,16 @@ export default function EmployeeAttendanceClient({ activeUser, initialAttendance
   const filteredHistory = [...initialAttendances].reverse().filter((session) => historyStatus === "ALL" || sessionStatus(session).label === historyStatus);
 
   const paging=useListPagination(filteredHistory,historyStatus+today);
-  async function record(kind: "IN" | "OUT") {
-    if (kind === "OUT" && callCount < ATTENDANCE_CALL_TARGET) {
-      window.alert(`Hôm nay mới có ${callCount}/${ATTENDANCE_CALL_TARGET} cuộc gọi ITY thật. Chưa đủ KPI nên chưa thể kết thúc ca.`);
-      return;
+  async function record(kind: "IN" | "OUT", forceWithoutAttendance = false) {
+    if (kind === "OUT" && callCount < ATTENDANCE_CALL_TARGET && !forceWithoutAttendance) {
+      const confirmed = window.confirm(`Hôm nay mới có ${callCount}/${ATTENDANCE_CALL_TARGET} cuộc gọi ITY thật. Nếu vẫn đóng ca thì sẽ KHÔNG được tính công. Bạn vẫn muốn đóng ca không?`);
+      if (!confirmed) return;
+      return record("OUT", true);
     }
     setLoading(true);
-    const result = kind === "IN" ? await checkIn(activeUser.id, geo ?? undefined) : await checkOut(openSession!.id, geo ?? undefined);
+    const result = kind === "IN" ? await checkIn(activeUser.id, geo ?? undefined) : await checkOut(openSession!.id, geo ?? undefined, forceWithoutAttendance);
     setLoading(false);
-    toast({ title: result.success ? (kind === "IN" ? "Đã chấm công vào" : "Đã chấm công ra") : "Không thể chấm công", description: result.success ? "Thời gian và vị trí đã được ghi nhận." : result.error, variant: result.success ? "default" : "destructive" });
+    toast({ title: result.success ? (kind === "IN" ? "Đã chấm công vào" : forceWithoutAttendance ? "Đã đóng ca, không tính công" : "Đã chấm công ra") : "Không thể chấm công", description: result.success ? (forceWithoutAttendance ? "Ca đã đóng nhưng không được tính công vì chưa đủ 40 cuộc gọi ITY thật." : "Thời gian và vị trí đã được ghi nhận.") : result.error, variant: result.success ? "default" : "destructive" });
     if (result.success) router.refresh();
   }
 

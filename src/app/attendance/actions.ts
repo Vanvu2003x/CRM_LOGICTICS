@@ -23,14 +23,14 @@ export async function checkIn(userId:string,location?:GeoInput) {
  return {success:true};
  }catch(error){return {success:false,error:error instanceof Error?error.message:"Không chấm công được."};}
 }
-export async function checkOut(id:string,location?:GeoInput) {
+export async function checkOut(id:string,location?:GeoInput,forceWithoutAttendance=false) {
  try {const user=await requireUser();const attendance=await db.attendance.findUnique({where:{id}});
  if(!attendance || attendance.checkOut) throw new Error("Ca không tồn tại hoặc đã kết thúc.");
  await assertOwner(user,attendance.userId);
  const realCallCount=await db.callLog.count({where:{salesId:attendance.userId,callid:{not:{startsWith:"demo-"}},startedAt:{gte:attendance.checkIn,lte:new Date()}}});
- if(realCallCount<ATTENDANCE_CALL_TARGET) throw new Error(`Hôm nay mới có ${realCallCount}/${ATTENDANCE_CALL_TARGET} cuộc gọi ITY thật. Chưa đủ KPI nên chưa thể kết thúc ca.`);
+ if(realCallCount<ATTENDANCE_CALL_TARGET && !forceWithoutAttendance) throw new Error(`Hôm nay mới có ${realCallCount}/${ATTENDANCE_CALL_TARGET} cuộc gọi ITY thật. Nếu vẫn đóng ca thì sẽ không được tính công.`);
  const geo=validGeo(location);
- await db.attendance.update({where:{id},data:{checkOut:new Date(),closeType:"MANUAL",...(geo?{checkOutLatitude:geo.latitude,checkOutLongitude:geo.longitude,checkOutAccuracy:geo.accuracy}:{})}});
+ await db.attendance.update({where:{id},data:{checkOut:new Date(),closeType:realCallCount<ATTENDANCE_CALL_TARGET?"MANUAL_NOT_COUNTED":"MANUAL",...(realCallCount<ATTENDANCE_CALL_TARGET?{closeNote:`Không tính công: chỉ có ${realCallCount}/${ATTENDANCE_CALL_TARGET} cuộc gọi ITY thật.`}:{ }),...(geo?{checkOutLatitude:geo.latitude,checkOutLongitude:geo.longitude,checkOutAccuracy:geo.accuracy}:{})}});
  revalidatePath("/attendance");revalidatePath("/social-kpi");return {success:true};
  }catch(error){return {success:false,error:error instanceof Error?error.message:"Không kết thúc được ca."};}
 }

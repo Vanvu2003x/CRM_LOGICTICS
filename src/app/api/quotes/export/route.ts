@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { ownedOrder } from "@/lib/crm-data";
+import { db } from "@/lib/db";
 import { exportQuoteTemplate, type QuoteTemplateLine } from "@/lib/quote-template-export";
 
 export const runtime = "nodejs";
@@ -20,13 +21,17 @@ export async function POST(request: Request) {
     if (!Array.isArray(body.lines)) throw new Error("Dữ liệu báo giá không hợp lệ.");
 
     const mode = String(body.mode || order.transportMethod || "FCL").toUpperCase() === "LCL" ? "lcl" : "fcl";
+    const [sales, lead] = await Promise.all([
+      db.user.findUnique({ where: { id: order.salesId }, select: { name: true } }),
+      order.leadId ? db.lead.findUnique({ where: { id: order.leadId }, select: { company: true } }) : null,
+    ]);
     const path = join(process.cwd(), "public", "templates", `bao-gia-nhap-khau-${mode}.xlsx`);
     const template = await readFile(path);
     const workbook = await exportQuoteTemplate({
       template,
       incoterm: String(order.incoterms || "EXW"),
-      company: "",
-      attention: user.name,
+      company: lead?.company || order.customerName || "",
+      attention: sales?.name || user.name,
       exchangeRate: 26600,
       mode,
       lines: body.lines,

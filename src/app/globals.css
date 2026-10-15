@@ -48,6 +48,27 @@
 .crm-shell[data-theme="dark"] main .crm-leads-table th:last-child,
 .crm-shell[data-theme="dark"] main .crm-leads-table td:last-child { background: #101c2e; box-shadow: -1px 0 #26364f; }
 
+/* Keep the orders grid fully visible on desktop; long values wrap inside their cells. */
+.crm-orders-table { table-layout: fixed; font-size: 11px; line-height: 16px; }
+.crm-orders-table th,
+.crm-orders-table td { overflow-wrap: anywhere; word-break: break-word; }
+.crm-orders-table th:nth-child(1) { width: 7%; }
+.crm-orders-table th:nth-child(2) { width: 10%; }
+.crm-orders-table th:nth-child(3) { width: 11%; }
+.crm-orders-table th:nth-child(4) { width: 8%; }
+.crm-orders-table th:nth-child(5) { width: 7%; }
+.crm-orders-table th:nth-child(6),
+.crm-orders-table th:nth-child(7) { width: 9%; }
+.crm-orders-table th:nth-child(8) { width: 6%; }
+.crm-orders-table th:nth-child(9),
+.crm-orders-table th:nth-child(10) { width: 7%; }
+.crm-orders-table th:nth-child(11) { width: 6%; }
+.crm-orders-table th:nth-child(12) { width: 8%; }
+.crm-orders-table th:nth-child(13) { width: 7%; }
+.crm-orders-table th:nth-child(14) { width: 8%; }
+.crm-orders-table input,
+.crm-orders-table select { min-height: 28px; padding: 3px 5px; font-size: 10px; }
+
 /* Dense campaign plan with a visible action column at every table width. */
 .crm-shell main .crm-campaign-table { min-width: 1100px; font-size: 12px; line-height: 18px; }
 .crm-shell main .crm-campaign-table th,

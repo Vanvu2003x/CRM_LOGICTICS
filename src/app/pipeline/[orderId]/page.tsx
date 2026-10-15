@@ -180,7 +180,7 @@ function OrderDetailContent({ params }: { params: Promise<{ orderId: string }> }
         <div className="lg:col-span-4 space-y-6">
 
           {/* Stepper Card */}
-          <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80 sticky top-4 max-h-[calc(100vh-100px)] overflow-y-auto">
+          <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80 max-h-[calc(100vh-100px)] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="font-bold text-slate-900 text-sm">Tiến Độ Quy Trình 13 Bước</h3>
               <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">
@@ -256,7 +256,7 @@ function OrderDetailContent({ params }: { params: Promise<{ orderId: string }> }
                     </span>
                   </div>
 
-                  {log.recordingUrl && <audio controls src={`/api/calls/${log.id}/recording`} className="h-8 w-full"/>}
+                  {log.recordingUrl && <audio controls src={`/api/calls/${log.id}/recording`} className="block h-8 max-w-full min-w-0 w-full"/>}
                 </div>
               ))}
             </div>
